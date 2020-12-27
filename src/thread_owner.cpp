@@ -53,29 +53,33 @@ bool thread_owner::joinable() const
     return pthread_ != nullptr;
 }
 
-void thread_owner::join()
-{
-    configASSERT(joinable()); // else invalid_argument
-    configASSERT(this->get_id() != freertos::this_thread::get_id()); // else resource_deadlock_would_occur
+#ifdef configTHREAD_EXIT_SEMAPHORE_INDEX
 
-    // wait for signal from thread exit
-    exit_sem_.acquire();
-
-    // signal received, thread is deleted, mark it so
-    pthread_ = nullptr;
-}
-
-void thread_owner::detach()
-{
-    if (joinable())
+    void thread_owner::join()
     {
-        // if getting the semaphore fails, the thread is still alive
-        if (!exit_sem_.try_acquire())
-        {
-            // unlink exit semaphore
-            (void)pthread_->clear_exit_semaphore(&exit_sem_);
-        }
-        // release the thread itself
+        configASSERT(joinable()); // else invalid_argument
+        configASSERT(this->get_id() != freertos::this_thread::get_id()); // else resource_deadlock_would_occur
+
+        // wait for signal from thread exit
+        exit_sem_.acquire();
+
+        // signal received, thread is deleted, mark it so
         pthread_ = nullptr;
     }
-}
+
+    void thread_owner::detach()
+    {
+        if (joinable())
+        {
+            // if getting the semaphore fails, the thread is still alive
+            if (!exit_sem_.try_acquire())
+            {
+                // unlink exit semaphore
+                (void)pthread_->clear_exit_semaphore(&exit_sem_);
+            }
+            // release the thread itself
+            pthread_ = nullptr;
+        }
+    }
+
+#endif // configTHREAD_EXIT_SEMAPHORE_INDEX

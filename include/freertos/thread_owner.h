@@ -44,23 +44,34 @@ namespace freertos
         {
         }
 
-        #if (configSUPPORT_DYNAMIC_ALLOCATION == 1)
+        #ifdef configTHREAD_EXIT_SEMAPHORE_INDEX
 
-            /// @brief  Constructs a dynamically allocated thread with the provided arguments.
-            /// @note   FreeRTOS thread functions take only one argument, the following arguments
-            ///         specify the thread's properties (stack size, priority, friendly name)
-            template<class Function, class ... Args>
-            thread_owner(Function&& f, Args&&... args)
-                    : pthread_(thread::create(f, std::forward<Args>(args)...)), exit_sem_()
-            {
-                if (pthread_ != nullptr)
+            #if (configSUPPORT_DYNAMIC_ALLOCATION == 1)
+
+                /// @brief  Constructs a dynamically allocated thread with the provided arguments.
+                /// @note   FreeRTOS thread functions take only one argument, the following arguments
+                ///         specify the thread's properties (stack size, priority, friendly name)
+                template<class Function, class ... Args>
+                thread_owner(Function&& f, Args&&... args)
+                        : pthread_(thread::create(f, std::forward<Args>(args)...)), exit_sem_()
                 {
-                    // call will always succeed with a freshly created thread
-                    (void) pthread_->set_exit_semaphore(&exit_sem_);
+                    if (pthread_ != nullptr)
+                    {
+                        // call will always succeed with a freshly created thread
+                        (void) pthread_->set_exit_semaphore(&exit_sem_);
+                    }
                 }
-            }
 
-        #endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)
+            #endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)
+
+            /// @brief  Waits for the owned thread to finish execution.
+            /// @note   May only be called when the thread is joinable, and not from the owned thread's context
+            void join();
+
+            /// @brief  Waits for the owned thread to finish execution.
+            void detach();
+
+        #endif // configTHREAD_EXIT_SEMAPHORE_INDEX
 
         /// @brief  Provides a unique identifier of the thread.
         /// @return The thread's unique identifier (0 is reserved as invalid)
@@ -70,12 +81,6 @@ namespace freertos
         /// @return true if the thread is valid and hasn't been joined, false otherwise
         bool joinable() const;
 
-        /// @brief  Waits for the owned thread to finish execution.
-        /// @note   May only be called when the thread is joinable, and not from the owned thread's context
-        void join();
-
-        /// @brief  Waits for the owned thread to finish execution.
-        void detach();
 
         /// @brief  Number of concurrent threads supported.
         /// @return Fixed to 0 since FreeRTOS doesn't have such limitation by design,

@@ -88,23 +88,25 @@ namespace freertos
         /// @remark Thread context callable
         ~thread();
 
+        #ifdef configTHREAD_EXIT_SEMAPHORE_INDEX
 
-        /// @brief  Returns the currently stored exit semaphore of the thread.
-        ///         Each thread may store a semaphore reference that it will signal
-        ///         at the time of termination.
-        /// @return Pointer to the exit semaphore, or nullptr if not set
-        binary_semaphore *get_exit_semaphore();
+            /// @brief  Returns the currently stored exit semaphore of the thread.
+            ///         Each thread may store a semaphore reference that it will signal
+            ///         at the time of termination.
+            /// @return Pointer to the exit semaphore, or nullptr if not set
+            binary_semaphore *get_exit_semaphore();
 
-        /// @brief  Tries to set a new exit semaphore for the thread.
-        /// @param  sem: pointer to the semaphore to set
-        /// @return true if the semaphore is set, false if the slot is already occupied
-        bool set_exit_semaphore(binary_semaphore *sem);
+            /// @brief  Tries to set a new exit semaphore for the thread.
+            /// @param  sem: pointer to the semaphore to set
+            /// @return true if the semaphore is set, false if the slot is already occupied
+            bool set_exit_semaphore(binary_semaphore *sem);
 
-        /// @brief  Tries to clear the exit semaphore for the thread.
-        /// @param  sem: pointer to the semaphore to clear
-        /// @return true if the semaphore is cleared, false if it wasn't set to begin with
-        bool clear_exit_semaphore(binary_semaphore *sem);
+            /// @brief  Tries to clear the exit semaphore for the thread.
+            /// @param  sem: pointer to the semaphore to clear
+            /// @return true if the semaphore is cleared, false if it wasn't set to begin with
+            bool clear_exit_semaphore(binary_semaphore *sem);
 
+        #endif // configTHREAD_EXIT_SEMAPHORE_INDEX
 
         /// @brief  Suspends the execution of the thread, until @ref resume is called.
         /// @remark Thread context callable

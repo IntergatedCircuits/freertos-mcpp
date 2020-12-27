@@ -72,69 +72,74 @@ thread::~thread()
 
 void thread::signal_exit()
 {
-    cpu::critical_section cs;
-    const lock_guard<decltype(cs)> lock(cs);
+    #ifdef configTHREAD_EXIT_SEMAPHORE_INDEX
 
-    auto sem = get_exit_semaphore();
-    // at task creation, this pointer is set to NULL
-    if (sem != nullptr)
-    {
-        // if there is, signal it
-        sem->release();
-    }
+        cpu::critical_section cs;
+        const lock_guard<decltype(cs)> lock(cs);
+
+        auto sem = get_exit_semaphore();
+        // at task creation, this pointer is set to NULL
+        if (sem != nullptr)
+        {
+            // if there is, signal it
+            sem->release();
+        }
+
+    #endif // configTHREAD_EXIT_SEMAPHORE_INDEX
 }
 
-#ifndef configTHREAD_EXIT_SEMAPHORE_INDEX
-#define configTHREAD_EXIT_SEMAPHORE_INDEX   0
-#endif
-#if (configNUM_THREAD_LOCAL_STORAGE_POINTERS <= configTHREAD_EXIT_SEMAPHORE_INDEX)
-#error "Thread exit semaphore storage must be allowed."
-#endif
+#ifdef configTHREAD_EXIT_SEMAPHORE_INDEX
 
-binary_semaphore *thread::get_exit_semaphore()
-{
-    return reinterpret_cast<binary_semaphore*>(
-            pvTaskGetThreadLocalStoragePointer(handle(),
-                    configTHREAD_EXIT_SEMAPHORE_INDEX));
-}
+    #if (configNUM_THREAD_LOCAL_STORAGE_POINTERS <= configTHREAD_EXIT_SEMAPHORE_INDEX)
+    #error "Thread exit semaphore storage must be allowed."
+    #endif
 
-bool thread::set_exit_semaphore(binary_semaphore *sem)
-{
-    cpu::critical_section cs;
-    const lock_guard<decltype(cs)> lock(cs);
-
-    if (get_exit_semaphore() == nullptr)
+    binary_semaphore *thread::get_exit_semaphore()
     {
-        // no prior semaphores registered, register this one
-        vTaskSetThreadLocalStoragePointer(handle(),
-                configTHREAD_EXIT_SEMAPHORE_INDEX, reinterpret_cast<void*>(sem));
-        return true;
+        return reinterpret_cast<binary_semaphore*>(
+                pvTaskGetThreadLocalStoragePointer(handle(),
+                        configTHREAD_EXIT_SEMAPHORE_INDEX));
     }
-    else
-    {
-        // thread has other observer already
-        return false;
-    }
-}
 
-bool thread::clear_exit_semaphore(binary_semaphore *sem)
-{
-    cpu::critical_section cs;
-    const lock_guard<decltype(cs)> lock(cs);
+    bool thread::set_exit_semaphore(binary_semaphore *sem)
+    {
+        cpu::critical_section cs;
+        const lock_guard<decltype(cs)> lock(cs);
 
-    if (get_exit_semaphore() == sem)
-    {
-        // this semaphore is registered, clear it
-        vTaskSetThreadLocalStoragePointer(handle(),
-                configTHREAD_EXIT_SEMAPHORE_INDEX, nullptr);
-        return true;
+        if (get_exit_semaphore() == nullptr)
+        {
+            // no prior semaphores registered, register this one
+            vTaskSetThreadLocalStoragePointer(handle(),
+                    configTHREAD_EXIT_SEMAPHORE_INDEX, reinterpret_cast<void*>(sem));
+            return true;
+        }
+        else
+        {
+            // thread has other observer already
+            return false;
+        }
     }
-    else
+
+    bool thread::clear_exit_semaphore(binary_semaphore *sem)
     {
-        // thread has other observer already
-        return false;
+        cpu::critical_section cs;
+        const lock_guard<decltype(cs)> lock(cs);
+
+        if (get_exit_semaphore() == sem)
+        {
+            // this semaphore is registered, clear it
+            vTaskSetThreadLocalStoragePointer(handle(),
+                    configTHREAD_EXIT_SEMAPHORE_INDEX, nullptr);
+            return true;
+        }
+        else
+        {
+            // thread has other observer already
+            return false;
+        }
     }
-}
+
+#endif // configTHREAD_EXIT_SEMAPHORE_INDEX
 
 void thread::suspend()
 {
