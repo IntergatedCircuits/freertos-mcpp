@@ -44,7 +44,7 @@ namespace freertos
         /// @remark Thread context callable
         inline void acquire()
         {
-            (void)take(INFINITY);
+            (void)take(infinity);
         }
 
         /// @brief  Tries to take the semaphore if it is available.

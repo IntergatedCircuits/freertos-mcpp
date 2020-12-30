@@ -37,8 +37,8 @@ namespace freertos
         #include "FreeRTOS.h"
 
         // these macros use native type casts, so need some redirection
-        constexpr TickType_t INFINITE_DELAY = portMAX_DELAY;
-        constexpr TickType_t TICK_RATE_HZ = configTICK_RATE_HZ;
+        constexpr TickType_t infinite_delay = portMAX_DELAY;
+        constexpr TickType_t tick_rate_Hz = configTICK_RATE_HZ;
     }
 
     /// @brief  A @ref TrivialClock class that wraps the FreeRTOS tick timer.
@@ -46,7 +46,7 @@ namespace freertos
     {
     public:
         using rep                       = native::TickType_t;
-        using period                    = std::ratio<1, native::TICK_RATE_HZ>;
+        using period                    = std::ratio<1, native::tick_rate_Hz>;
         using duration                  = std::chrono::duration<rep, period>;
         using time_point                = std::chrono::time_point<tick_timer>;
         static constexpr bool is_steady = true;
@@ -75,7 +75,7 @@ namespace freertos
 
     /// @brief  Dedicated @ref tick_timer::duration expression that ensures
     ///         infinite wait time on an operation
-    constexpr tick_timer::duration INFINITY { native::INFINITE_DELAY };
+    constexpr tick_timer::duration infinity { native::infinite_delay };
 }
 
 #endif // __FREERTOS_TICK_TIMER_H_
