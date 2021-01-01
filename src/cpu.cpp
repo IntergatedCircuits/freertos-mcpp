@@ -63,5 +63,5 @@ void cpu::critical_section::unlock()
 
 bool this_cpu::is_in_isr()
 {
-    return native::xPortIsInsideInterrupt();
+    return xPortIsInsideInterrupt();
 }

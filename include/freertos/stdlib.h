@@ -26,6 +26,7 @@
 #ifndef __FREERTOS_STDLIB_H_
 #define __FREERTOS_STDLIB_H_
 
+#include <condition_variable>
 #include <mutex>
 
 namespace freertos
@@ -35,6 +36,12 @@ namespace freertos
 
     template<typename _Mutex>
     using unique_lock = std::unique_lock<_Mutex>;
+
+    enum class cv_status
+    {
+        no_timeout,
+        timeout
+    };
 }
 
 #endif // __FREERTOS_STDLIB_H_
