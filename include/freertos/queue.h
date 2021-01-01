@@ -150,9 +150,9 @@ namespace freertos
         /// @param  waittime: duration to wait for the queue to have available space
         /// @return true if successful, false if the queue is full
         /// @remark Thread and ISR context callable (ISR only with no waittime)
-        bool push_front(const value_type &value, tick_timer::duration waittime = 0)
+        bool push_front(const value_type &value, tick_timer::duration waittime = tick_timer::duration(0))
         {
-            return queue::push_front(reinterpret_cast<void*>(&value), waittime);
+            return queue::push_front(reinterpret_cast<void*>(const_cast<value_type*>(&value)), waittime);
         }
 
         /// @brief  Pushes a new value to the back of the queue.
@@ -160,9 +160,9 @@ namespace freertos
         /// @param  waittime: duration to wait for the queue to have available space
         /// @return true if successful, false if the queue is full
         /// @remark Thread and ISR context callable (ISR only with no waittime)
-        bool push_back(const value_type &value, tick_timer::duration waittime = 0)
+        bool push_back(const value_type &value, tick_timer::duration waittime = tick_timer::duration(0))
         {
-            return queue::push_back(reinterpret_cast<void*>(&value), waittime);
+            return queue::push_back(reinterpret_cast<void*>(const_cast<value_type*>(&value)), waittime);
         }
 
         /// @brief  Replaces the current queue element value to a new one.
@@ -172,7 +172,7 @@ namespace freertos
         typename std::enable_if<MAX_SIZE == 1, void>::type
         replace(const value_type &value)
         {
-            return queue::replace(reinterpret_cast<void*>(&value));
+            queue::replace(reinterpret_cast<void*>(const_cast<value_type*>(&value)));
         }
 
         /// @brief  Copies the front value of the queue without consuming it.
@@ -180,7 +180,7 @@ namespace freertos
         /// @param  waittime: duration to wait for the queue to have an available element
         /// @return true if successful, false if the queue is empty
         /// @remark Thread and ISR context callable (ISR only with no waittime)
-        bool peek_front(value_type *value, tick_timer::duration waittime = 0) const
+        bool peek_front(value_type *value, tick_timer::duration waittime = tick_timer::duration(0)) const
         {
             return queue::peek_front(reinterpret_cast<void*>(value), waittime);
         }
@@ -190,7 +190,7 @@ namespace freertos
         /// @param  waittime: duration to wait for the queue to have an available element
         /// @return true if successful, false if the queue is empty
         /// @remark Thread and ISR context callable (ISR only with no waittime)
-        bool pop_front(value_type *value, tick_timer::duration waittime = 0)
+        bool pop_front(value_type *value, tick_timer::duration waittime = tick_timer::duration(0))
         {
             return queue::pop_front(reinterpret_cast<void*>(value), waittime);
         }
@@ -199,6 +199,7 @@ namespace freertos
 
             /// @brief  Creates a queue by allocating memory on the heap, and initializing it.
             /// @return Dynamically allocated queue, or nullptr if allocation failed
+            /// @remark Thread context callable
             static shallow_copy_queue *create()
             {
                 return reinterpret_cast<shallow_copy_queue*>(create(MAX_SIZE, sizeof(value_type)));
