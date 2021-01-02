@@ -35,6 +35,48 @@ namespace freertos
         struct EventGroupDef_t;
     }
 
+    /// @brief  Thin type wrapper for condition flag value type.
+    class cflag
+    {
+    public:
+        using value_type = native::TickType_t;
+
+        constexpr cflag()
+                : value_(0)
+        { }
+        constexpr cflag(value_type value)
+                : value_(value)
+        { }
+        operator value_type&()
+        {
+            return value_;
+        }
+        constexpr operator value_type() const
+        {
+            return value_;
+        }
+
+        static constexpr cflag max()
+        {
+            // the highest byte is reserved for OS flags
+            return (1 << ((sizeof(value_type) - 1) * 8)) - 1;
+        }
+        static constexpr cflag min()
+        {
+            return 0;
+        }
+
+        /// @brief  The value returned by blocking function calls when the wait time expired
+        ///         without any relevant flags being set.
+        static constexpr cflag timeout()
+        {
+            return 0;
+        }
+
+    private:
+        value_type value_;
+    };
+
     /// @brief  This class is a lightweight condition variable, allows threads to block
     ///         until a combination of flags has been set. The key difference to @ref condition_variable
     ///         is that here the waiting side chooses the wait strategy:
@@ -43,12 +85,6 @@ namespace freertos
     class condition_flags : private native::StaticEventGroup_t
     {
     public:
-        using flag_t = native::TickType_t;
-
-        /// @brief  The value returned by blocking function calls when the wait time expired
-        ///         without any relevant flags being set.
-        static constexpr flag_t timeout = 0;
-
         /// @brief  Constructs a condition_flags statically.
         /// @remark Thread context callable
         condition_flags();
@@ -60,17 +96,17 @@ namespace freertos
         /// @brief  Reads the current flags status.
         /// @return The currently active flags
         /// @remark Thread and ISR context callable
-        flag_t get() const;
+        cflag get() const;
 
         /// @brief  Sets the provided flags in the condition.
         /// @param  flags: the flags to activate
         /// @remark Thread and ISR context callable
-        void set(flag_t flags);
+        void set(cflag flags);
 
         /// @brief  Removes the provided flags from the condition.
         /// @param  flags: the flags to deactivate
         /// @remark Thread and ISR context callable
-        void clear(flag_t flags);
+        void clear(cflag flags);
 
         /// @brief  Blocks the current thread until any of the provided flags is raised.
         ///         When a flag unblocks the thread, it will be cleared.
@@ -79,7 +115,7 @@ namespace freertos
         /// @return the raised flag(s) that caused the activation, or 0 if timed out
         /// @remark Thread context callable
         template<class Rep, class Period>
-        flag_t wait_any_for(flag_t flags, const std::chrono::duration<Rep, Period>& rel_time)
+        cflag wait_any_for(cflag flags, const std::chrono::duration<Rep, Period>& rel_time)
         {
             return wait(flags, std::chrono::duration_cast<tick_timer::duration>(rel_time), true, false);
         }
@@ -91,7 +127,7 @@ namespace freertos
         /// @return the raised flag(s) that caused the activation, or 0 if timed out
         /// @remark Thread context callable
         template<class Clock, class Duration>
-        flag_t wait_any_until(flag_t flags, const std::chrono::time_point<Clock, Duration>& abs_time)
+        cflag wait_any_until(cflag flags, const std::chrono::time_point<Clock, Duration>& abs_time)
         {
             return wait_any_for(flags, abs_time - Clock::now());
         }
@@ -103,7 +139,7 @@ namespace freertos
         /// @return the raised flag(s) that caused the activation, or 0 if timed out
         /// @remark Thread context callable
         template<class Rep, class Period>
-        flag_t wait_all_for(flag_t flags, const std::chrono::duration<Rep, Period>& rel_time)
+        cflag wait_all_for(cflag flags, const std::chrono::duration<Rep, Period>& rel_time)
         {
             return wait(flags, std::chrono::duration_cast<tick_timer::duration>(rel_time), true, true);
         }
@@ -115,7 +151,7 @@ namespace freertos
         /// @return the raised flag(s) that caused the activation, or 0 if timed out
         /// @remark Thread context callable
         template<class Clock, class Duration>
-        flag_t wait_all_until(flag_t flags, const std::chrono::time_point<Clock, Duration>& abs_time)
+        cflag wait_all_until(cflag flags, const std::chrono::time_point<Clock, Duration>& abs_time)
         {
             return wait_all_for(flags, abs_time - Clock::now());
         }
@@ -127,7 +163,7 @@ namespace freertos
         /// @return the raised flag(s) that caused the activation, or 0 if timed out
         /// @remark Thread context callable
         template<class Rep, class Period>
-        flag_t shared_wait_any_for(flag_t flags, const std::chrono::duration<Rep, Period>& rel_time)
+        cflag shared_wait_any_for(cflag flags, const std::chrono::duration<Rep, Period>& rel_time)
         {
             return wait(flags, std::chrono::duration_cast<tick_timer::duration>(rel_time), false, false);
         }
@@ -139,7 +175,7 @@ namespace freertos
         /// @return the raised flag(s) that caused the activation, or 0 if timed out
         /// @remark Thread context callable
         template<class Clock, class Duration>
-        flag_t shared_wait_any_until(flag_t flags, const std::chrono::time_point<Clock, Duration>& abs_time)
+        cflag shared_wait_any_until(cflag flags, const std::chrono::time_point<Clock, Duration>& abs_time)
         {
             return shared_wait_any_for(flags, abs_time - Clock::now());
         }
@@ -151,7 +187,7 @@ namespace freertos
         /// @return the raised flag(s) that caused the activation, or 0 if timed out
         /// @remark Thread context callable
         template<class Rep, class Period>
-        flag_t shared_wait_all_for(flag_t flags, const std::chrono::duration<Rep, Period>& rel_time)
+        cflag shared_wait_all_for(cflag flags, const std::chrono::duration<Rep, Period>& rel_time)
         {
             return wait(flags, std::chrono::duration_cast<tick_timer::duration>(rel_time), false, true);
         }
@@ -163,7 +199,7 @@ namespace freertos
         /// @return the raised flag(s) that caused the activation, or 0 if timed out
         /// @remark Thread context callable
         template<class Clock, class Duration>
-        flag_t shared_wait_all_until(flag_t flags, const std::chrono::time_point<Clock, Duration>& abs_time)
+        cflag shared_wait_all_until(cflag flags, const std::chrono::time_point<Clock, Duration>& abs_time)
         {
             return shared_wait_all_for(flags, abs_time - Clock::now());
         }
@@ -174,7 +210,7 @@ namespace freertos
             return reinterpret_cast<native::EventGroupDef_t*>(const_cast<condition_flags*>(this));
         }
 
-        flag_t wait(flag_t flags, const tick_timer::duration& rel_time, bool exclusive, bool match_all);
+        cflag wait(cflag flags, const tick_timer::duration& rel_time, bool exclusive, bool match_all);
     };
 
 

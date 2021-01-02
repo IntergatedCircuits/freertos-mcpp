@@ -49,7 +49,7 @@ condition_flags::~condition_flags()
     vEventGroupDelete(handle());
 }
 
-condition_flags::flag_t condition_flags::get() const
+cflag condition_flags::get() const
 {
     if (!this_cpu::is_in_isr())
     {
@@ -61,7 +61,7 @@ condition_flags::flag_t condition_flags::get() const
     }
 }
 
-void condition_flags::set(flag_t flags)
+void condition_flags::set(cflag flags)
 {
     if (!this_cpu::is_in_isr())
     {
@@ -83,7 +83,7 @@ void condition_flags::set(flag_t flags)
     }
 }
 
-void condition_flags::clear(flag_t flags)
+void condition_flags::clear(cflag flags)
 {
     if (!this_cpu::is_in_isr())
     {
@@ -103,10 +103,10 @@ void condition_flags::clear(flag_t flags)
     }
 }
 
-condition_flags::flag_t condition_flags::wait(flag_t flags, const tick_timer::duration& rel_time, bool exclusive, bool match_all)
+cflag condition_flags::wait(cflag flags, const tick_timer::duration& rel_time, bool exclusive, bool match_all)
 {
     configASSERT(!this_cpu::is_in_isr());
-    flag_t setflags = xEventGroupWaitBits(handle(), flags, exclusive, match_all, to_ticks(rel_time));
+    cflag setflags = xEventGroupWaitBits(handle(), flags, exclusive, match_all, to_ticks(rel_time));
     // only return the flags that are relevant to the wait operation
     return flags & setflags;
 }
