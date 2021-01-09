@@ -27,7 +27,7 @@
 #define __FREERTOS_THREAD_OWNER_H_
 
 #include "freertos/thread.h"
-#include "freertos/semaphore.h"
+#include "freertos/condition_flags.h"
 #include <utility>
 
 namespace freertos
@@ -44,7 +44,7 @@ namespace freertos
         {
         }
 
-        #ifdef configTHREAD_EXIT_SEMAPHORE_INDEX
+        #ifdef configTHREAD_EXIT_CONDITION_INDEX
 
             #if (configSUPPORT_DYNAMIC_ALLOCATION == 1)
 
@@ -53,12 +53,12 @@ namespace freertos
                 ///         specify the thread's properties (stack size, priority, friendly name)
                 template<class Function, class ... Args>
                 thread_owner(Function&& f, Args&&... args)
-                        : pthread_(thread::create(f, std::forward<Args>(args)...)), exit_sem_()
+                        : pthread_(thread::create(f, std::forward<Args>(args)...))
                 {
                     if (pthread_ != nullptr)
                     {
                         // call will always succeed with a freshly created thread
-                        (void) pthread_->set_exit_semaphore(&exit_sem_);
+                        (void) pthread_->set_exit_condition(&exit_cond_);
                     }
                 }
 
@@ -71,7 +71,7 @@ namespace freertos
             /// @brief  Waits for the owned thread to finish execution.
             void detach();
 
-        #endif // configTHREAD_EXIT_SEMAPHORE_INDEX
+        #endif // configTHREAD_EXIT_CONDITION_INDEX
 
         /// @brief  Provides a unique identifier of the thread.
         /// @return The thread's unique identifier (0 is reserved as invalid)
@@ -99,7 +99,7 @@ namespace freertos
 
     private:
         thread *pthread_ = nullptr;
-        binary_semaphore exit_sem_;
+        condition_flags exit_cond_;
 
         // non-copyable
         thread_owner(const thread_owner&) = delete;

@@ -26,7 +26,7 @@
 #include "freertos/thread.h"
 #include "freertos/cpu.h"
 #include "freertos/scheduler.h"
-#include "freertos/semaphore.h"
+#include "freertos/condition_flags.h"
 
 namespace freertos
 {
@@ -72,45 +72,45 @@ thread::~thread()
 
 void thread::signal_exit()
 {
-    #ifdef configTHREAD_EXIT_SEMAPHORE_INDEX
+    #ifdef configTHREAD_EXIT_CONDITION_INDEX
 
         cpu::critical_section cs;
         const lock_guard<decltype(cs)> lock(cs);
 
-        auto sem = get_exit_semaphore();
+        auto cond = get_exit_condition();
         // at task creation, this pointer is set to NULL
-        if (sem != nullptr)
+        if (cond != nullptr)
         {
             // if there is, signal it
-            sem->release();
+            cond->set(cflag::max());
         }
 
-    #endif // configTHREAD_EXIT_SEMAPHORE_INDEX
+    #endif // configTHREAD_EXIT_CONDITION_INDEX
 }
 
-#ifdef configTHREAD_EXIT_SEMAPHORE_INDEX
+#ifdef configTHREAD_EXIT_CONDITION_INDEX
 
-    #if (configNUM_THREAD_LOCAL_STORAGE_POINTERS <= configTHREAD_EXIT_SEMAPHORE_INDEX)
-    #error "Thread exit semaphore storage must be allowed."
+    #if (configNUM_THREAD_LOCAL_STORAGE_POINTERS <= configTHREAD_EXIT_CONDITION_INDEX)
+    #error "Thread exit condition storage must be allowed."
     #endif
 
-    binary_semaphore *thread::get_exit_semaphore()
+    condition_flags *thread::get_exit_condition()
     {
-        return reinterpret_cast<binary_semaphore*>(
+        return reinterpret_cast<condition_flags*>(
                 pvTaskGetThreadLocalStoragePointer(handle(),
-                        configTHREAD_EXIT_SEMAPHORE_INDEX));
+                        configTHREAD_EXIT_CONDITION_INDEX));
     }
 
-    bool thread::set_exit_semaphore(binary_semaphore *sem)
+    bool thread::set_exit_condition(condition_flags *cond)
     {
         cpu::critical_section cs;
         const lock_guard<decltype(cs)> lock(cs);
 
-        if (get_exit_semaphore() == nullptr)
+        if (get_exit_condition() == nullptr)
         {
             // no prior semaphores registered, register this one
             vTaskSetThreadLocalStoragePointer(handle(),
-                    configTHREAD_EXIT_SEMAPHORE_INDEX, reinterpret_cast<void*>(sem));
+                    configTHREAD_EXIT_CONDITION_INDEX, reinterpret_cast<void*>(cond));
             return true;
         }
         else
@@ -120,16 +120,16 @@ void thread::signal_exit()
         }
     }
 
-    bool thread::clear_exit_semaphore(binary_semaphore *sem)
+    bool thread::clear_exit_condition(condition_flags *cond)
     {
         cpu::critical_section cs;
         const lock_guard<decltype(cs)> lock(cs);
 
-        if (get_exit_semaphore() == sem)
+        if (get_exit_condition() == cond)
         {
             // this semaphore is registered, clear it
             vTaskSetThreadLocalStoragePointer(handle(),
-                    configTHREAD_EXIT_SEMAPHORE_INDEX, nullptr);
+                    configTHREAD_EXIT_CONDITION_INDEX, nullptr);
             return true;
         }
         else
@@ -139,7 +139,7 @@ void thread::signal_exit()
         }
     }
 
-#endif // configTHREAD_EXIT_SEMAPHORE_INDEX
+#endif // configTHREAD_EXIT_CONDITION_INDEX
 
 void thread::suspend()
 {

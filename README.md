@@ -34,9 +34,9 @@ Consider the recommended settings for `FreeRTOSConfig.h`:
 #define configTASK_RETURN_ADDRESS               vTaskExitHandler
 
 // required for thread termination signalling, used by thread_owner
-// configNUM_THREAD_LOCAL_STORAGE_POINTERS must be higher than configTHREAD_EXIT_SEMAPHORE_INDEX
+// configNUM_THREAD_LOCAL_STORAGE_POINTERS must be higher than configTHREAD_EXIT_CONDITION_INDEX
 #define configNUM_THREAD_LOCAL_STORAGE_POINTERS 1
-#define configTHREAD_EXIT_SEMAPHORE_INDEX       0
+#define configTHREAD_EXIT_CONDITION_INDEX       0
 
 // required to support mutex, timed_mutex
 #define configUSE_MUTEXES                       1

@@ -53,7 +53,7 @@ bool thread_owner::joinable() const
     return pthread_ != nullptr;
 }
 
-#ifdef configTHREAD_EXIT_SEMAPHORE_INDEX
+#ifdef configTHREAD_EXIT_CONDITION_INDEX
 
     void thread_owner::join()
     {
@@ -61,7 +61,7 @@ bool thread_owner::joinable() const
         configASSERT(this->get_id() != freertos::this_thread::get_id()); // else resource_deadlock_would_occur
 
         // wait for signal from thread exit
-        exit_sem_.acquire();
+        exit_cond_.shared_wait_any_for(cflag::max(), infinity);
 
         // signal received, thread is deleted, mark it so
         pthread_ = nullptr;
@@ -71,15 +71,15 @@ bool thread_owner::joinable() const
     {
         if (joinable())
         {
-            // if getting the semaphore fails, the thread is still alive
-            if (!exit_sem_.try_acquire())
+            // if the condition flag isn't set, the thread is still alive
+            if (exit_cond_.get() == cflag::min())
             {
                 // unlink exit semaphore
-                (void)pthread_->clear_exit_semaphore(&exit_sem_);
+                (void)pthread_->clear_exit_condition(&exit_cond_);
             }
             // release the thread itself
             pthread_ = nullptr;
         }
     }
 
-#endif // configTHREAD_EXIT_SEMAPHORE_INDEX
+#endif // configTHREAD_EXIT_CONDITION_INDEX

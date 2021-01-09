@@ -40,8 +40,9 @@ namespace freertos
         constexpr uint32_t MIN_STACK_SIZE = configMINIMAL_STACK_SIZE;
     }
 
-    class binary_semaphore;
+    class condition_flags;
 
+    using notify_value = std::uint32_t;
 
     /// @brief A class representing a thread of execution (equals to a FreeRTOS task).
     ///
@@ -88,25 +89,25 @@ namespace freertos
         /// @remark Thread context callable
         ~thread();
 
-        #ifdef configTHREAD_EXIT_SEMAPHORE_INDEX
+        #ifdef configTHREAD_EXIT_CONDITION_INDEX
 
-            /// @brief  Returns the currently stored exit semaphore of the thread.
-            ///         Each thread may store a semaphore reference that it will signal
+            /// @brief  Returns the currently stored exit condition of the thread.
+            ///         Each thread may store a condition reference that it will signal
             ///         at the time of termination.
-            /// @return Pointer to the exit semaphore, or nullptr if not set
-            binary_semaphore *get_exit_semaphore();
+            /// @return Pointer to the exit condition, or nullptr if not set
+            condition_flags *get_exit_condition();
 
-            /// @brief  Tries to set a new exit semaphore for the thread.
-            /// @param  sem: pointer to the semaphore to set
-            /// @return true if the semaphore is set, false if the slot is already occupied
-            bool set_exit_semaphore(binary_semaphore *sem);
+            /// @brief  Tries to set a new exit condition for the thread.
+            /// @param  sem: pointer to the condition to set
+            /// @return true if the condition is set, false if the slot is already occupied
+            bool set_exit_condition(condition_flags *cond);
 
-            /// @brief  Tries to clear the exit semaphore for the thread.
-            /// @param  sem: pointer to the semaphore to clear
-            /// @return true if the semaphore is cleared, false if it wasn't set to begin with
-            bool clear_exit_semaphore(binary_semaphore *sem);
+            /// @brief  Tries to clear the exit condition for the thread.
+            /// @param  sem: pointer to the condition to clear
+            /// @return true if the condition is cleared, false if it wasn't set to begin with
+            bool clear_exit_condition(condition_flags *cond);
 
-        #endif // configTHREAD_EXIT_SEMAPHORE_INDEX
+        #endif // configTHREAD_EXIT_CONDITION_INDEX
 
         /// @brief  Suspends the execution of the thread, until @ref resume is called.
         /// @remark Thread context callable
@@ -388,6 +389,18 @@ namespace freertos
         {
             sleep_for(abs_time - Clock::now());
         }
+
+        #if 0 && (configUSE_TASK_NOTIFICATIONS == 1)
+
+            bool notify_wait_for(const tick_timer::duration& rel_time,
+                    thread::notify_flag clr_at_entry = 0, thread::notify_flag clr_at_exit = 0,
+                    thread::notify_flag *received = nullptr);
+
+            notify_value notify_value_wait_for(const tick_timer::duration& rel_time,
+                    thread::notify_flag clr_at_entry = 0, thread::notify_flag clr_at_exit = 0,
+                    thread::notify_flag *received = nullptr);
+
+        #endif // (configUSE_TASK_NOTIFICATIONS == 1)
     }
 }
 
