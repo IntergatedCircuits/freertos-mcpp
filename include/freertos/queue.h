@@ -120,29 +120,16 @@ namespace freertos
         #endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)
     };
 
-    /// @brief  A thread/ISR-safe queue that stores shallow copies (via memcpy) of pushed elements.
-    template<typename T, queue::size_type MAX_SIZE>
-    class shallow_copy_queue : public queue
+    template<typename T>
+    class ishallow_copy_queue : public queue
     {
     public:
         using value_type = T;
-
-        /// @brief  Maximum size of the queue.
-        static constexpr size_type max_size()
-        {
-            return MAX_SIZE;
-        }
 
         /// @brief  Size of the elements stored in the queue.
         static constexpr size_type elem_size()
         {
             return sizeof(value_type);
-        }
-
-        /// @brief  Constructs a shallow-copy queue statically.
-        shallow_copy_queue()
-            : queue(max_size(), elem_size(), elem_buffer_)
-        {
         }
 
         /// @brief  Pushes a new value to the front of the queue.
@@ -169,8 +156,7 @@ namespace freertos
         ///         This call is meant to be used by single length queues only.
         /// @param  value: the new value to copy
         /// @remark Thread and ISR context callable
-        typename std::enable_if<MAX_SIZE == 1, void>::type
-        replace(const value_type &value)
+        void replace(const value_type &value)
         {
             queue::replace(reinterpret_cast<void*>(const_cast<value_type*>(&value)));
         }
@@ -195,6 +181,37 @@ namespace freertos
             return queue::pop_front(reinterpret_cast<void*>(value), waittime);
         }
 
+    protected:
+        ishallow_copy_queue(size_type size, size_type elem_size, unsigned char *elem_buffer)
+            : queue(size, elem_size, elem_buffer)
+        {
+        }
+
+        // non-movable
+        ishallow_copy_queue(const ishallow_copy_queue&&) = delete;
+        ishallow_copy_queue& operator=(const ishallow_copy_queue&&) = delete;
+    };
+
+    /// @brief  A thread/ISR-safe queue that stores shallow copies (via memcpy) of pushed elements.
+    template<typename T, queue::size_type MAX_SIZE>
+    class shallow_copy_queue : public ishallow_copy_queue<T>
+    {
+    public:
+        using value_type = T;
+        using size_type = queue::size_type;
+
+        /// @brief  Maximum size of the queue.
+        static constexpr size_type max_size()
+        {
+            return MAX_SIZE;
+        }
+
+        /// @brief  Constructs a shallow-copy queue statically.
+        shallow_copy_queue()
+            : ishallow_copy_queue<value_type>(max_size(), sizeof(value_type), elem_buffer_)
+        {
+        }
+
         #if (configSUPPORT_DYNAMIC_ALLOCATION == 1)
 
             /// @brief  Creates a queue by allocating memory on the heap, and initializing it.
@@ -208,11 +225,7 @@ namespace freertos
         #endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)
 
     private:
-        unsigned char elem_buffer_[max_size() * elem_size()];
-
-        // non-movable
-        shallow_copy_queue(const shallow_copy_queue&&) = delete;
-        shallow_copy_queue& operator=(const shallow_copy_queue&&) = delete;
+        unsigned char elem_buffer_[max_size() * sizeof(value_type)];
     };
 }
 
