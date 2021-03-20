@@ -51,9 +51,9 @@ namespace freertos
                 /// @brief  Constructs a dynamically allocated thread with the provided arguments.
                 /// @note   FreeRTOS thread functions take only one argument, the following arguments
                 ///         specify the thread's properties (stack size, priority, friendly name)
-                template<class Function, class ... Args>
-                thread_owner(Function&& f, Args&&... args)
-                        : pthread_(thread::create(f, std::forward<Args>(args)...))
+                template<class ... Args>
+                thread_owner(Args&&... args)
+                        : pthread_(thread::create(std::forward<Args>(args)...))
                 {
                     if (pthread_ != nullptr)
                     {

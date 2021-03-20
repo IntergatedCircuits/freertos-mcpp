@@ -210,14 +210,14 @@ namespace freertos
                     const char *name = DEFAULT_NAME);
 
             template<typename T>
-            static typename std::enable_if<(sizeof(T) <= sizeof(uintptr_t)), thread*>::type
+            static typename std::enable_if<(sizeof(T) <= sizeof(std::uintptr_t)), thread*>::type
             create(void (*func)(T), T arg,
                     size_t stacksize = DEFAULT_STACK_SIZE,
                     priority prio    = priority(),
                     const char *name = DEFAULT_NAME)
             {
                 return create(reinterpret_cast<function>(func),
-                        reinterpret_cast<void*>(static_cast<uintptr_t>(arg)),
+                        reinterpret_cast<void*>(static_cast<std::uintptr_t>(arg)),
                         stacksize, prio, name);
             }
 
@@ -311,7 +311,7 @@ namespace freertos
         }
 
         template<typename T>
-        static_thread(typename std::enable_if<(sizeof(T) <= sizeof(uintptr_t)),
+        static_thread(typename std::enable_if<(sizeof(T) <= sizeof(std::uintptr_t)),
                 void (*)(T)>::type func, T arg,
                 priority prio = priority(), const char *name = DEFAULT_NAME)
             : static_thread(reinterpret_cast<function>(func),
@@ -324,7 +324,7 @@ namespace freertos
         static_thread(void (*func)(T*), T* arg,
                 priority prio = priority(), const char *name = DEFAULT_NAME)
             : static_thread(reinterpret_cast<function>(func),
-                    reinterpret_cast<void*>(static_cast<std::uintptr_t>(arg)),
+                    reinterpret_cast<void*>(arg),
                     prio, name)
         {
         }
@@ -333,7 +333,7 @@ namespace freertos
         static_thread(void (*func)(T*), T& arg,
                 priority prio = priority(), const char *name = DEFAULT_NAME)
             : static_thread(reinterpret_cast<function>(func),
-                    reinterpret_cast<void*>(static_cast<std::uintptr_t>(arg)),
+                    reinterpret_cast<void*>(arg),
                     prio, name)
         {
         }
@@ -342,7 +342,7 @@ namespace freertos
         static_thread(T& obj, void (T::*member_func)(),
                 priority prio = priority(), const char *name = DEFAULT_NAME)
             : static_thread(reinterpret_cast<function>(member_func),
-                    reinterpret_cast<void*>(static_cast<std::uintptr_t>(&obj)),
+                    reinterpret_cast<void*>(&obj),
                     prio, name)
         {
         }
@@ -370,7 +370,7 @@ namespace freertos
         /// @return The current thread's unique identifier
         thread::id get_id();
 
-        void sleep_for(const tick_timer::duration& rel_time);
+        void sleep_for(tick_timer::duration rel_time);
 
         /// @brief  Blocks the current thread's execution for a given duration.
         /// @param  rel_time: duration to block the current thread
@@ -378,7 +378,7 @@ namespace freertos
         void sleep_for(const std::chrono::duration<Rep, Period>& rel_time)
         {
             // workaround to prevent this function calling itself
-            const auto ticks_sleep_for = static_cast<void (*)(const tick_timer::duration&)>(&sleep_for);
+            const auto ticks_sleep_for = static_cast<void (*)(tick_timer::duration)>(&sleep_for);
             ticks_sleep_for(std::chrono::duration_cast<tick_timer::duration>(rel_time));
         }
 

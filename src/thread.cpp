@@ -247,7 +247,7 @@ thread::id this_thread::get_id()
     return thread::get_current()->get_id();
 }
 
-void this_thread::sleep_for(const tick_timer::duration& rel_time)
+void this_thread::sleep_for(tick_timer::duration rel_time)
 {
     configASSERT(!this_cpu::is_in_isr());
     configASSERT(scheduler::get_state() == scheduler::state::running);
