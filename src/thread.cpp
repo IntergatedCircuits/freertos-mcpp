@@ -33,19 +33,6 @@ namespace freertos
     namespace native
     {
         #include "task.h"
-
-        static_assert(eTaskState::eRunning   == static_cast<eTaskState>(thread::state::running),
-                "These values must match!");
-        static_assert(eTaskState::eReady     == static_cast<eTaskState>(thread::state::ready),
-                "These values must match!");
-        static_assert(eTaskState::eBlocked   == static_cast<eTaskState>(thread::state::blocked),
-                "These values must match!");
-        static_assert(eTaskState::eSuspended == static_cast<eTaskState>(thread::state::suspended),
-                "These values must match!");
-        static_assert(eTaskState::eDeleted   == static_cast<eTaskState>(thread::state::deleted),
-                "These values must match!");
-        static_assert(eTaskState::eInvalid   == static_cast<eTaskState>(thread::state::invalid),
-                "These values must match!");
     }
 }
 using namespace freertos;
@@ -200,7 +187,26 @@ thread::state thread::get_state() const
 {
     configASSERT(!this_cpu::is_in_isr());
     {
-        return static_cast<state>(eTaskGetState(handle()));
+        state s;
+        switch (eTaskGetState(handle()))
+        {
+            case eTaskState::eRunning:
+                s = state::running;
+                break;
+            case eTaskState::eReady:
+                s = state::ready;
+                break;
+            case eTaskState::eBlocked:
+            case eTaskState::eSuspended:
+                s = state::suspended;
+                break;
+            case eTaskState::eDeleted:
+            case eTaskState::eInvalid:
+            default:
+                s = state::terminated;
+                break;
+        }
+        return s;
     }
 }
 

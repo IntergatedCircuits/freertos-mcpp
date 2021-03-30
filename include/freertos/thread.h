@@ -132,10 +132,8 @@ namespace freertos
         {
             running = 0,
             ready,
-            blocked,
             suspended,
-            deleted,
-            invalid
+            terminated,
         };
 
         /// @brief  Reads the current state of the thread.
