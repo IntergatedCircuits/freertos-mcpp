@@ -116,7 +116,7 @@ namespace freertos
                 /// @remark Thread context callable
                 inline void lock()
                 {
-                    semaphore::acquire();
+                    (void)recursive_take(infinity);
                 }
 
                 /// @brief  Attempts to lock the mutex if the current thread isn't locking it already.
@@ -124,7 +124,7 @@ namespace freertos
                 /// @remark Thread context callable
                 inline bool try_lock()
                 {
-                    return semaphore::try_acquire();
+                    return recursive_take(tick_timer::duration(0));
                 }
 
                 /// @brief  Reduces the thread's lock count and unlocks the mutex when the lock count reaches zero.
@@ -138,7 +138,7 @@ namespace freertos
                 template<class Rep, class Period>
                 inline bool try_lock_for(const std::chrono::duration<Rep, Period>& rel_time)
                 {
-                    return semaphore::try_acquire_for(rel_time);
+                    return recursive_take(std::chrono::duration_cast<tick_timer::duration>(rel_time));
                 }
 
                 /// @brief  Tries to lock the mutex until the given deadline.
@@ -148,7 +148,7 @@ namespace freertos
                 template<class Clock, class Duration>
                 inline bool try_lock_until(const std::chrono::time_point<Clock, Duration>& abs_time)
                 {
-                    return semaphore::try_acquire_until(abs_time);
+                    return try_lock_for(abs_time - Clock::now());
                 }
 
                 /// @brief  Function to observe the mutex's current locking thread.
@@ -173,6 +173,9 @@ namespace freertos
                 // non-movable
                 recursive_mutex(const recursive_mutex&&) = delete;
                 recursive_mutex& operator=(const recursive_mutex&&) = delete;
+
+            private:
+                bool recursive_take(tick_timer::duration timeout);
             };
 
 

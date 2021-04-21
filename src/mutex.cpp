@@ -41,6 +41,8 @@ using namespace freertos::native;
 
     void mutex::unlock()
     {
+        configASSERT(!this_cpu::is_in_isr());
+
         // the same thread must unlock the mutex that has locked it
         configASSERT(get_locking_thread()->get_id() == this_thread::get_id());
 
@@ -71,10 +73,19 @@ using namespace freertos::native;
 
         void recursive_mutex::unlock()
         {
+            configASSERT(!this_cpu::is_in_isr());
+
             // the same thread must unlock the mutex that has locked it
             configASSERT(get_locking_thread()->get_id() == this_thread::get_id());
 
-            semaphore::release();
+            xSemaphoreGiveRecursive(handle());
+        }
+
+        bool recursive_mutex::recursive_take(tick_timer::duration timeout)
+        {
+            configASSERT(!this_cpu::is_in_isr());
+
+            return xSemaphoreTakeRecursive(handle(), to_ticks(timeout));
         }
 
         recursive_mutex::recursive_mutex()
