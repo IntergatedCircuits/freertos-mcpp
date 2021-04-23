@@ -57,12 +57,13 @@ namespace freertos
         static time_point now();
     };
 
-    /// @brief  Converts @ref tick_timer::duration to the underlying tick count.
-    /// @param  duration: time duration in tick_timer scale
+    /// @brief  Converts a duration to the underlying tick count.
+    /// @param  rel_time: time duration
     /// @return Tick count
-    constexpr tick_timer::rep to_ticks(const tick_timer::duration& duration)
+    template<class Rep, class Period>
+    constexpr tick_timer::rep to_ticks(const std::chrono::duration<Rep, Period>& rel_time)
     {
-        return duration.count();
+        return std::chrono::duration_cast<tick_timer::duration>(rel_time).count();
     }
 
     /// @brief  Converts @ref tick_timer::time_point to the underlying tick count.
