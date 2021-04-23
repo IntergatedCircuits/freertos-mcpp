@@ -262,6 +262,62 @@ namespace freertos
 
         #endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)
 
+        #if (configUSE_TASK_NOTIFICATIONS == 1)
+
+            using notify_value = std::uint32_t;
+
+            class notifier
+            {
+            public:
+                constexpr notifier(thread &t) : thread_(&t)
+                {
+                }
+
+                inline notify_value get_last_value() const
+                {
+                    return last_value_;
+                }
+
+                inline notify_value get_value()
+                {
+                    return clear(0);
+                }
+
+                void signal();
+                bool cancel_signal();
+
+                void increment();
+
+                void set_flags(notify_value flags);
+                inline void clear_flags(notify_value flags)
+                {
+                    last_value_ = clear(flags);
+                }
+
+                bool try_set_value(notify_value new_value);
+
+                void set_value(notify_value new_value);
+
+                inline void reset_value()
+                {
+                    last_value_ = clear(~0);
+                }
+
+            private:
+                thread *thread_;
+                notify_value last_value_ = 0;
+
+                inline native::tskTaskControlBlock* handle() const
+                {
+                    return const_cast<thread*>(thread_)->handle();
+                }
+
+                bool notify(unsigned action, notify_value value);
+                notify_value clear(notify_value flags);
+            };
+
+        #endif // (configUSE_TASK_NOTIFICATIONS == 1)
+
     protected:
         static constexpr const char* DEFAULT_NAME = "anonym";
         static constexpr size_t DEFAULT_STACK_SIZE = native::MIN_STACK_SIZE * sizeof(native::StackType_t);
@@ -373,7 +429,7 @@ namespace freertos
         /// @brief  Blocks the current thread's execution for a given duration.
         /// @param  rel_time: duration to block the current thread
         template<class Rep, class Period>
-        void sleep_for(const std::chrono::duration<Rep, Period>& rel_time)
+        inline void sleep_for(const std::chrono::duration<Rep, Period>& rel_time)
         {
             // workaround to prevent this function calling itself
             const auto ticks_sleep_for = static_cast<void (*)(tick_timer::duration)>(&sleep_for);
@@ -383,20 +439,24 @@ namespace freertos
         /// @brief  Blocks the current thread's execution until the given deadline.
         /// @param  abs_time: deadline to block the current thread
         template<class Clock, class Duration>
-        void sleep_until(const std::chrono::time_point<Clock, Duration>& abs_time)
+        inline void sleep_until(const std::chrono::time_point<Clock, Duration>& abs_time)
         {
             sleep_for(abs_time - Clock::now());
         }
 
-        #if 0 && (configUSE_TASK_NOTIFICATIONS == 1)
+        #if (configUSE_TASK_NOTIFICATIONS == 1)
 
-            bool notify_wait_for(const tick_timer::duration& rel_time,
-                    thread::notify_flag clr_at_entry = 0, thread::notify_flag clr_at_exit = 0,
-                    thread::notify_flag *received = nullptr);
+            bool wait_notification_for(const tick_timer::duration& rel_time, thread::notify_value *value,
+                    thread::notify_value clear_flags_before = 0,
+                    thread::notify_value clear_flags_after = 0);
 
-            notify_value notify_value_wait_for(const tick_timer::duration& rel_time,
-                    thread::notify_flag clr_at_entry = 0, thread::notify_flag clr_at_exit = 0,
-                    thread::notify_flag *received = nullptr);
+            inline bool wait_signal_for(const tick_timer::duration& rel_time)
+            {
+                return wait_notification_for(rel_time, nullptr);
+            }
+
+            notify_value try_acquire_notification_for(const tick_timer::duration& rel_time,
+                    bool acquire_single = false);
 
         #endif // (configUSE_TASK_NOTIFICATIONS == 1)
     }

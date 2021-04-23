@@ -220,16 +220,16 @@ thread* thread::get_current()
 
 #if (configSUPPORT_DYNAMIC_ALLOCATION == 1)
 
-thread* thread::create(function func, void *param,
-        size_t stacksize, priority prio, const char *name)
-{
-    thread* t = nullptr;
-    bool res = xTaskCreate(func, name,
-            stacksize / sizeof(StackType_t),
-            param, prio, reinterpret_cast<TaskHandle_t*>(&t));
-    configASSERT(res);
-    return t;
-}
+    thread* thread::create(function func, void *param,
+            size_t stacksize, priority prio, const char *name)
+    {
+        thread* t = nullptr;
+        bool res = xTaskCreate(func, name,
+                stacksize / sizeof(StackType_t),
+                param, prio, reinterpret_cast<TaskHandle_t*>(&t));
+        configASSERT(res);
+        return t;
+    }
 
 #endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)
 
@@ -239,6 +239,77 @@ thread::thread(StackType_t *pstack ,std::uint32_t stack_size,
     (void)xTaskCreateStatic(func, name, stack_size,
             param, prio, pstack, this);
 }
+
+#if (configUSE_TASK_NOTIFICATIONS == 1)
+
+    bool thread::notifier::notify(unsigned action, notify_value value)
+    {
+        if (!this_cpu::is_in_isr())
+        {
+            return xTaskGenericNotify(handle(), value, static_cast<eNotifyAction>(action), &last_value_);
+        }
+        else
+        {
+            BaseType_t needs_yield = false;
+            bool success = xTaskGenericNotifyFromISR(handle(), value, static_cast<eNotifyAction>(action), &last_value_, &needs_yield);
+            portYIELD_FROM_ISR(needs_yield);
+            return success;
+        }
+    }
+
+    void thread::notifier::signal()
+    {
+        notify(eNoAction, 0);
+    }
+
+    bool thread::notifier::cancel_signal()
+    {
+        configASSERT(!this_cpu::is_in_isr());
+        return xTaskNotifyStateClear(handle());
+    }
+
+    void thread::notifier::increment()
+    {
+        notify(eIncrement, 0);
+    }
+
+    void thread::notifier::set_flags(notify_value flags)
+    {
+        notify(eSetBits, flags);
+    }
+
+    notify_value thread::notifier::clear(notify_value flags)
+    {
+        configASSERT(!this_cpu::is_in_isr());
+        return ulTaskNotifyValueClear(handle(), flags);
+    }
+
+    bool thread::notifier::try_set_value(notify_value new_value)
+    {
+        return notify(eSetValueWithoutOverwrite, new_value);
+    }
+
+    void thread::notifier::set_value(notify_value new_value)
+    {
+        notify(eSetValueWithOverwrite, new_value);
+    }
+
+    bool this_thread::wait_notification_for(const tick_timer::duration& rel_time,
+            thread::notify_value *value,
+            thread::notify_value clear_flags_before, thread::notify_value clear_flags_after)
+    {
+        configASSERT(!this_cpu::is_in_isr());
+        return xTaskNotifyWait(clear_flags_before, clear_flags_after, value, to_ticks(rel_time));
+    }
+
+    thread::notify_value this_thread::try_acquire_notification_for(const tick_timer::duration& rel_time,
+            bool acquire_single)
+    {
+        configASSERT(!this_cpu::is_in_isr());
+        return ulTaskNotifyTake(!acquire_single, to_ticks(rel_time));
+    }
+
+#endif // (configUSE_TASK_NOTIFICATIONS == 1)
 
 void this_thread::yield()
 {
