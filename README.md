@@ -33,7 +33,7 @@ Consider the recommended settings for `FreeRTOSConfig.h`:
     extern void vTaskExitHandler(void);
 #define configTASK_RETURN_ADDRESS               vTaskExitHandler
 
-// required for thread termination signalling, used by thread_owner
+// required for thread termination signalling, used by thread::join
 // configNUM_THREAD_LOCAL_STORAGE_POINTERS must be higher than configTHREAD_EXIT_CONDITION_INDEX
 #define configNUM_THREAD_LOCAL_STORAGE_POINTERS 1
 #define configTHREAD_EXIT_CONDITION_INDEX       0

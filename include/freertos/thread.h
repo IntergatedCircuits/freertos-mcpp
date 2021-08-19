@@ -83,6 +83,14 @@ namespace freertos
 
         #endif // (configUSE_TRACE_FACILITY == 1)
 
+        /// @brief  Number of concurrent threads supported.
+        /// @return Fixed to 0 since FreeRTOS doesn't have such limitation by design,
+        ///         only resource constraints apply
+        static constexpr unsigned int hardware_concurrency()
+        {
+            return 0;
+        }
+
         /// @brief  Signals to the thread's observer that it's being terminated,
         ///         and destroys the thread, stopping its execution and freeing
         ///         its dynamically allocated memory.
@@ -90,24 +98,25 @@ namespace freertos
         ~thread();
 
         #ifdef configTHREAD_EXIT_CONDITION_INDEX
+        private:
+            condition_flags *get_exit_condition() const;
+            void set_exit_condition(condition_flags *cond);
 
-            /// @brief  Returns the currently stored exit condition of the thread.
-            ///         Each thread may store a condition reference that it will signal
-            ///         at the time of termination.
-            /// @return Pointer to the exit condition, or nullptr if not set
-            condition_flags *get_exit_condition();
+        public:
+            /// @brief  Waits for the thread to finish execution.
+            /// @note   May only be called when the thread is joinable, and not from the owned thread's context
+            void join();
 
-            /// @brief  Tries to set a new exit condition for the thread.
-            /// @param  sem: pointer to the condition to set
-            /// @return true if the condition is set, false if the slot is already occupied
-            bool set_exit_condition(condition_flags *cond);
-
-            /// @brief  Tries to clear the exit condition for the thread.
-            /// @param  sem: pointer to the condition to clear
-            /// @return true if the condition is cleared, false if it wasn't set to begin with
-            bool clear_exit_condition(condition_flags *cond);
+            /// @brief  Checks if the thread is joinable (potentially executing).
+            /// @return true if the thread is valid and hasn't been joined, false otherwise
+            /// @remark Thread and ISR context callable
+            bool joinable() const;
 
         #endif // configTHREAD_EXIT_CONDITION_INDEX
+
+        // detach is not supported.
+        // if the thread is create()-d with dynamic allocation then the thread is already detached
+        // if the thread is statically allocated, detach is not possible
 
         /// @brief  Suspends the execution of the thread, until @ref resume is called.
         /// @remark Thread context callable

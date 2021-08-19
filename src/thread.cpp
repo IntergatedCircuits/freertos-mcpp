@@ -81,49 +81,37 @@ void thread::signal_exit()
     #error "Thread exit condition storage must be allowed."
     #endif
 
-    condition_flags *thread::get_exit_condition()
-    {
+    condition_flags *thread::get_exit_condition() const
+     {
         return reinterpret_cast<condition_flags*>(
                 pvTaskGetThreadLocalStoragePointer(handle(),
                         configTHREAD_EXIT_CONDITION_INDEX));
     }
 
-    bool thread::set_exit_condition(condition_flags *cond)
+    void thread::set_exit_condition(condition_flags *cond)
     {
-        cpu::critical_section cs;
-        const lock_guard<decltype(cs)> lock(cs);
-
-        if (get_exit_condition() == nullptr)
-        {
-            // no prior semaphores registered, register this one
-            vTaskSetThreadLocalStoragePointer(handle(),
-                    configTHREAD_EXIT_CONDITION_INDEX, reinterpret_cast<void*>(cond));
-            return true;
-        }
-        else
-        {
-            // thread has other observer already
-            return false;
-        }
+        configASSERT(nullptr == get_exit_condition()); // cannot have multiple threads joining
+        vTaskSetThreadLocalStoragePointer(handle(),
+                configTHREAD_EXIT_CONDITION_INDEX, reinterpret_cast<void*>(cond));
     }
 
-    bool thread::clear_exit_condition(condition_flags *cond)
+    bool thread::joinable() const
     {
-        cpu::critical_section cs;
-        const lock_guard<decltype(cs)> lock(cs);
+        return (get_state() != state::terminated) && (nullptr == get_exit_condition());
+    }
 
-        if (get_exit_condition() == cond)
-        {
-            // this semaphore is registered, clear it
-            vTaskSetThreadLocalStoragePointer(handle(),
-                    configTHREAD_EXIT_CONDITION_INDEX, nullptr);
-            return true;
-        }
-        else
-        {
-            // thread has other observer already
-            return false;
-        }
+    void thread::join()
+    {
+        configASSERT(joinable()); // else invalid_argument
+        configASSERT(this->get_id() != freertos::this_thread::get_id()); // else resource_deadlock_would_occur
+
+        condition_flags exit_cond;
+        set_exit_condition(&exit_cond);
+
+        // wait for signal from thread exit
+        exit_cond.shared_wait_any_for(cflag::max(), infinity);
+
+        // signal received, thread is deleted, return
     }
 
 #endif // configTHREAD_EXIT_CONDITION_INDEX
