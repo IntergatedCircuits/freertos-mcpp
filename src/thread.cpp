@@ -208,8 +208,8 @@ thread* thread::get_current()
 
 #if (configSUPPORT_DYNAMIC_ALLOCATION == 1)
 
-    thread* thread::create(function func, void *param,
-            size_t stacksize, priority prio, const char *name)
+    thread* freertos::make_thread(thread::function func, void *param,
+            size_t stacksize, thread::priority prio, const char *name)
     {
         thread* t = nullptr;
         bool res = xTaskCreate(func, name,

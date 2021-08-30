@@ -66,7 +66,7 @@ namespace freertos
     /// used to manage the allocated thread pointer. (This is doubly important since
     /// the thread's memory is allocated in two chunks.)
     ///
-    class thread : protected native::StaticTask_t
+    class thread : private native::StaticTask_t
     {
     public:
         static constexpr std::size_t NAME_MAX_SIZE = configMAX_TASK_NAME_LEN - 1; // exclude the terminating '\0'
@@ -199,77 +199,18 @@ namespace freertos
         /// @remark Thread context callable
         void set_priority(priority prio);
 
+        // use make_thread() instead
+        void* operator new(size_t size) = delete;
+        void* operator new[](size_t size) = delete;
 
-        #if (configSUPPORT_DYNAMIC_ALLOCATION == 1)
-
-            /// @brief  Creates a new thread by allocating memory on the heap, and initializing it.
-            ///         The thread becomes ready to execute within this call, meaning that it might
-            ///         have started running by the time this call returns.
-            /// @param  func:      the function to execute in the thread context
-            /// @param  param:     opaque parameter to pass to the thread function
-            /// @param  stacksize: size of the thread's stack in bytes
-            /// @param  prio:      thread priority level
-            /// @param  name:      short label for identifying the thread
-            /// @return pointer to the newly created thread, or nullptr if allocation failed
-            static thread* create(function func, void *param,
-                    size_t stacksize = DEFAULT_STACK_SIZE,
-                    priority prio    = priority(),
-                    const char *name = DEFAULT_NAME);
-
-            template<typename T>
-            static typename std::enable_if<(sizeof(T) <= sizeof(std::uintptr_t)), thread*>::type
-            create(void (*func)(T), T arg,
-                    size_t stacksize = DEFAULT_STACK_SIZE,
-                    priority prio    = priority(),
-                    const char *name = DEFAULT_NAME)
-            {
-                return create(reinterpret_cast<function>(func),
-                        reinterpret_cast<void*>(static_cast<std::uintptr_t>(arg)),
-                        stacksize, prio, name);
-            }
-
-            template<typename T>
-            static thread*
-            create(void (*func)(T*), T* arg,
-                    size_t stacksize = DEFAULT_STACK_SIZE,
-                    priority prio    = priority(),
-                    const char *name = DEFAULT_NAME)
-            {
-                return create(reinterpret_cast<function>(func),
-                        reinterpret_cast<void*>(arg),
-                        stacksize, prio, name);
-            }
-
-            template<typename T>
-            static thread*
-            create(void (*func)(T*), T& arg,
-                    size_t stacksize = DEFAULT_STACK_SIZE,
-                    priority prio    = priority(),
-                    const char *name = DEFAULT_NAME)
-            {
-                return create(reinterpret_cast<function>(func),
-                        reinterpret_cast<void*>(&arg),
-                        stacksize, prio, name);
-            }
-
-            template<class T>
-            static thread* create(T& obj, void (T::*member_func)(),
-                    size_t stacksize = DEFAULT_STACK_SIZE,
-                    priority prio    = priority(),
-                    const char *name = DEFAULT_NAME)
-            {
-                return create(reinterpret_cast<function>(member_func),
-                        reinterpret_cast<void*>(&obj),
-                        stacksize, prio, name);
-            }
-
-            /// @brief  Empty delete operator, since the destructor does the memory freeing
-            ///         if the object was dynamically allocated
-            void operator delete(void *p)
-            {
-            }
-
-        #endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)
+        /// @brief  Empty delete operator, since the destructor does the memory freeing
+        ///         if the object was dynamically allocated
+        void operator delete(void *p)
+        {
+        }
+        void operator delete[](void *p)
+        {
+        }
 
         #if (configUSE_TASK_NOTIFICATIONS == 1)
 
@@ -327,10 +268,10 @@ namespace freertos
 
         #endif // (configUSE_TASK_NOTIFICATIONS == 1)
 
-    protected:
         static constexpr const char* DEFAULT_NAME = "anonym";
         static constexpr size_t DEFAULT_STACK_SIZE = native::MIN_STACK_SIZE * sizeof(native::StackType_t);
 
+    protected:
         thread(native::StackType_t *pstack, std::uint32_t stack_size,
                 function func, void *param,
                 priority prio, const char *name);
@@ -351,6 +292,68 @@ namespace freertos
         void signal_exit();
     };
 
+    #if (configSUPPORT_DYNAMIC_ALLOCATION == 1)
+
+        /// @brief  Creates a new thread by allocating memory on the heap, and initializing it.
+        ///         The thread becomes ready to execute within this call, meaning that it might
+        ///         have started running by the time this call returns.
+        /// @param  func:      the function to execute in the thread context
+        /// @param  param:     opaque parameter to pass to the thread function
+        /// @param  stacksize: size of the thread's stack in bytes
+        /// @param  prio:      thread priority level
+        /// @param  name:      short label for identifying the thread
+        /// @return pointer to the newly created thread, or nullptr if allocation failed
+        thread* make_thread(thread::function func, void *param,
+                size_t stacksize        = thread::DEFAULT_STACK_SIZE,
+                thread::priority prio   = thread::priority(),
+                const char *name        = thread::DEFAULT_NAME);
+
+        template<typename T>
+        static typename std::enable_if<(sizeof(T) <= sizeof(std::uintptr_t)), thread*>::type
+        make_thread(void (*func)(T), T arg,
+                size_t stacksize        = thread::DEFAULT_STACK_SIZE,
+                thread::priority prio   = thread::priority(),
+                const char *name        = thread::DEFAULT_NAME)
+        {
+            return make_thread(reinterpret_cast<thread::function>(func),
+                    reinterpret_cast<void*>(static_cast<std::uintptr_t>(arg)),
+                    stacksize, prio, name);
+        }
+
+        template<typename T>
+        thread* make_thread(void (*func)(T*), T* arg,
+                size_t stacksize        = thread::DEFAULT_STACK_SIZE,
+                thread::priority prio   = thread::priority(),
+                const char *name        = thread::DEFAULT_NAME)
+        {
+            return make_thread(reinterpret_cast<thread::function>(func),
+                    reinterpret_cast<void*>(arg),
+                    stacksize, prio, name);
+        }
+
+        template<typename T>
+        thread* make_thread(void (*func)(T*), T& arg,
+                size_t stacksize        = thread::DEFAULT_STACK_SIZE,
+                thread::priority prio   = thread::priority(),
+                const char *name        = thread::DEFAULT_NAME)
+        {
+            return make_thread(reinterpret_cast<thread::function>(func),
+                    reinterpret_cast<void*>(&arg),
+                    stacksize, prio, name);
+        }
+
+        template<class T>
+        thread* make_thread(T& obj, void (T::*member_func)(),
+                size_t stacksize        = thread::DEFAULT_STACK_SIZE,
+                thread::priority prio   = thread::priority(),
+                const char *name        = thread::DEFAULT_NAME)
+        {
+            return make_thread(reinterpret_cast<thread::function>(member_func),
+                    reinterpret_cast<void*>(&obj),
+                    stacksize, prio, name);
+        }
+
+    #endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)
 
     /// @brief  A thread with statically allocated stack.
     template <const std::size_t STACK_SIZE_BYTES>
@@ -408,13 +411,6 @@ namespace freertos
                     reinterpret_cast<void*>(&obj),
                     prio, name)
         {
-        }
-
-        /// @brief  Static threads aren't allocated by the OS, so new and delete
-        ///         may use the default operators.
-        void operator delete(void *p)
-        {
-            ::delete p;
         }
 
     private:
