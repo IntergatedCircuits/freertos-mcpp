@@ -111,6 +111,9 @@ namespace freertos
         // non-copyable
         queue(const queue&) = delete;
         queue& operator=(const queue&) = delete;
+        // non-movable
+        queue(const queue&&) = delete;
+        queue& operator=(const queue&&) = delete;
 
         #if (configSUPPORT_DYNAMIC_ALLOCATION == 1)
 
@@ -186,14 +189,10 @@ namespace freertos
             : queue(size, elem_size, elem_buffer)
         {
         }
-
-        // non-movable
-        ishallow_copy_queue(const ishallow_copy_queue&&) = delete;
-        ishallow_copy_queue& operator=(const ishallow_copy_queue&&) = delete;
     };
 
     /// @brief  A thread/ISR-safe queue that stores shallow copies (via memcpy) of pushed elements.
-    template<typename T, queue::size_type MAX_SIZE>
+    template<typename T, const queue::size_type MAX_SIZE>
     class shallow_copy_queue : public ishallow_copy_queue<T>
     {
     public:

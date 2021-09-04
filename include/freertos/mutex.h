@@ -94,10 +94,6 @@ namespace freertos
                 static mutex *create();
 
             #endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)
-
-            // non-movable
-            mutex(const mutex&&) = delete;
-            mutex& operator=(const mutex&&) = delete;
         };
 
 
@@ -169,11 +165,6 @@ namespace freertos
                     static recursive_mutex *create();
 
                 #endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)
-
-                // non-movable
-                recursive_mutex(const recursive_mutex&&) = delete;
-                recursive_mutex& operator=(const recursive_mutex&&) = delete;
-
             private:
                 bool recursive_take(tick_timer::duration timeout);
             };

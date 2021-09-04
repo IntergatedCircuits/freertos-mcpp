@@ -131,7 +131,7 @@ namespace freertos
     #if (configUSE_COUNTING_SEMAPHORES == 1)
 
         /// @brief  Counting semaphore class.
-        template<semaphore::count_type MAX_VALUE = 1>
+        template<const semaphore::count_type MAX_VALUE = 1>
         class counting_semaphore : public semaphore
         {
         public:
