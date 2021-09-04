@@ -198,7 +198,7 @@ queue::queue(size_type size, size_type elem_size, unsigned char *elem_buffer)
     (void)xQueueCreateStatic(size, elem_size, elem_buffer, this);
 }
 
-#if (configSUPPORT_DYNAMIC_ALLOCATION == 1)
+#if 0 && (configSUPPORT_DYNAMIC_ALLOCATION == 1)
 
     queue* queue::create(size_type size, size_type elem_size)
     {

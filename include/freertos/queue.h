@@ -70,16 +70,6 @@ namespace freertos
         /// @remark Thread context callable
         ~queue();
 
-        #if (configSUPPORT_DYNAMIC_ALLOCATION == 1)
-
-            /// @brief  Empty delete operator, since the destructor does the memory freeing
-            ///         if the object was dynamically allocated
-            void operator delete(void *p)
-            {
-            }
-
-        #endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)
-
     protected:
         inline native::QueueDefinition* handle() const
         {
@@ -100,13 +90,6 @@ namespace freertos
         // used to create shallow_copy_queue
         queue(size_type size, size_type elem_size, unsigned char *elem_buffer);
 
-        #if (configSUPPORT_DYNAMIC_ALLOCATION == 1)
-
-            // used to create shallow_copy_queue
-            static queue* create(size_type size, size_type elem_size);
-
-        #endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)
-
     private:
         // non-copyable
         queue(const queue&) = delete;
@@ -114,13 +97,6 @@ namespace freertos
         // non-movable
         queue(const queue&&) = delete;
         queue& operator=(const queue&&) = delete;
-
-        #if (configSUPPORT_DYNAMIC_ALLOCATION == 1)
-
-            // use <class>::create() instead
-            void* operator new(std::size_t count);
-
-        #endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)
     };
 
     template<typename T>
@@ -210,18 +186,6 @@ namespace freertos
             : ishallow_copy_queue<value_type>(max_size(), sizeof(value_type), elem_buffer_)
         {
         }
-
-        #if (configSUPPORT_DYNAMIC_ALLOCATION == 1)
-
-            /// @brief  Creates a queue by allocating memory on the heap, and initializing it.
-            /// @return Dynamically allocated queue, or nullptr if allocation failed
-            /// @remark Thread context callable
-            static shallow_copy_queue *create()
-            {
-                return reinterpret_cast<shallow_copy_queue*>(create(MAX_SIZE, sizeof(value_type)));
-            }
-
-        #endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)
 
     private:
         unsigned char elem_buffer_[max_size() * sizeof(value_type)];

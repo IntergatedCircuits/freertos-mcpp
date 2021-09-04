@@ -86,14 +86,6 @@ namespace freertos
 
             /// @brief  Constructs a mutex statically.
             mutex();
-
-            #if (configSUPPORT_DYNAMIC_ALLOCATION == 1)
-
-                /// @brief  Creates a mutex by allocating memory on the heap, and initializing it.
-                /// @return Dynamically allocated mutex, or nullptr if allocation failed
-                static mutex *create();
-
-            #endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)
         };
 
 
@@ -158,13 +150,6 @@ namespace freertos
                 /// @brief  Constructs a recursive mutex statically.
                 recursive_mutex();
 
-                #if (configSUPPORT_DYNAMIC_ALLOCATION == 1)
-
-                    /// @brief  Creates a mutex by allocating memory on the heap, and initializing it.
-                    /// @return Dynamically allocated mutex, or nullptr if allocation failed
-                    static recursive_mutex *create();
-
-                #endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)
             private:
                 bool recursive_take(tick_timer::duration timeout);
             };

@@ -57,18 +57,6 @@ using namespace freertos::native;
         xSemaphoreCreateMutexStatic(this);
     }
 
-    #if (configSUPPORT_DYNAMIC_ALLOCATION == 1)
-
-        mutex *mutex::create()
-        {
-            // construction not allowed in ISR
-            configASSERT(!this_cpu::is_in_isr());
-
-            return reinterpret_cast<mutex*>(xSemaphoreCreateMutex());
-        }
-
-    #endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)
-
     #if (configUSE_RECURSIVE_MUTEXES == 1)
 
         void recursive_mutex::unlock()
@@ -95,18 +83,6 @@ using namespace freertos::native;
 
             xSemaphoreCreateRecursiveMutexStatic(this);
         }
-
-        #if (configSUPPORT_DYNAMIC_ALLOCATION == 1)
-
-            recursive_mutex *recursive_mutex::create()
-            {
-                // construction not allowed in ISR
-                configASSERT(!this_cpu::is_in_isr());
-
-                return reinterpret_cast<recursive_mutex*>(xSemaphoreCreateRecursiveMutex());
-            }
-
-        #endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)
 
     #endif // (configUSE_RECURSIVE_MUTEXES == 1)
 

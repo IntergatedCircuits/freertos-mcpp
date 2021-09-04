@@ -122,18 +122,6 @@ thread *semaphore::get_mutex_holder() const
         (void)xSemaphoreCreateCountingStatic(max, desired, this);
     }
 
-    #if (configSUPPORT_DYNAMIC_ALLOCATION == 1)
-
-        semaphore* semaphore::create_counting(count_type max, count_type desired)
-        {
-            // construction not allowed in ISR
-            configASSERT(!this_cpu::is_in_isr());
-
-            return reinterpret_cast<semaphore*>(xSemaphoreCreateCounting(max, desired));
-        }
-
-    #endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)
-
 #endif // (configUSE_COUNTING_SEMAPHORES == 1)
 
 binary_semaphore::binary_semaphore(count_type desired)
@@ -144,20 +132,3 @@ binary_semaphore::binary_semaphore(count_type desired)
     (void)xSemaphoreCreateBinaryStatic(this);
     give(desired);
 }
-
-#if (configSUPPORT_DYNAMIC_ALLOCATION == 1)
-
-    binary_semaphore *binary_semaphore::create(count_type desired)
-    {
-        // construction not allowed in ISR
-        configASSERT(!this_cpu::is_in_isr());
-
-        binary_semaphore *s = reinterpret_cast<binary_semaphore*>(xSemaphoreCreateBinary());
-        if (s != nullptr)
-        {
-            s->give(desired);
-        }
-        return s;
-    }
-
-#endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)

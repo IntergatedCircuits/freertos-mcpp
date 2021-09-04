@@ -91,16 +91,6 @@ namespace freertos
             return queue::size();
         }
 
-        #if (configSUPPORT_DYNAMIC_ALLOCATION == 1)
-
-            /// @brief  Empty delete operator, since the destructor does the memory freeing
-            ///         if the object was dynamically allocated
-            void operator delete(void * p)
-            {
-            }
-
-        #endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)
-
     protected:
         // actual FreeRTOS operations
         bool take(tick_timer::duration timeout);
@@ -111,21 +101,15 @@ namespace freertos
         {
         }
 
+        // only for mutexes
+        thread *get_mutex_holder() const;
+
         #if (configUSE_COUNTING_SEMAPHORES == 1)
 
             // used to create counting_semaphore
             semaphore(count_type max, count_type desired);
 
-            #if (configSUPPORT_DYNAMIC_ALLOCATION == 1)
-
-                static semaphore* create_counting(count_type max, count_type desired);
-
-            #endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)
-
         #endif // (configUSE_COUNTING_SEMAPHORES == 1)
-
-        // only for mutexes
-        thread *get_mutex_holder() const;
     };
 
     #if (configUSE_COUNTING_SEMAPHORES == 1)
@@ -146,17 +130,6 @@ namespace freertos
                 : semaphore(MAX_VALUE, desired)
             {
             }
-
-            #if (configSUPPORT_DYNAMIC_ALLOCATION == 1)
-
-                /// @brief  Creates a counting semaphore by allocating memory on the heap, and initializing it.
-                /// @return Dynamically allocated counting semaphore, or nullptr if allocation failed
-                static counting_semaphore *create(count_type desired = 0)
-                {
-                    return reinterpret_cast<counting_semaphore*>(create_counting(MAX_VALUE, desired));
-                }
-
-            #endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)
         };
 
     #endif // (configUSE_COUNTING_SEMAPHORES == 1)
@@ -175,14 +148,6 @@ namespace freertos
 
         /// @brief  Constructs a binary semaphore statically.
         binary_semaphore(count_type desired = 0);
-
-        #if (configSUPPORT_DYNAMIC_ALLOCATION == 1)
-
-            /// @brief  Creates a binary semaphore by allocating memory on the heap, and initializing it.
-            /// @return Dynamically allocated binary semaphore, or nullptr if allocation failed
-            static binary_semaphore *create(count_type desired = 0);
-
-        #endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)
     };
 }
 
