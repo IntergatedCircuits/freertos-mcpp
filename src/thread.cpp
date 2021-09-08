@@ -234,12 +234,12 @@ thread::thread(StackType_t *pstack ,std::uint32_t stack_size,
     {
         if (!this_cpu::is_in_isr())
         {
-            return xTaskGenericNotify(handle(), value, static_cast<eNotifyAction>(action), &last_value_);
+            return xTaskNotifyAndQuery(handle(), value, static_cast<eNotifyAction>(action), &last_value_);
         }
         else
         {
             BaseType_t needs_yield = false;
-            bool success = xTaskGenericNotifyFromISR(handle(), value, static_cast<eNotifyAction>(action), &last_value_, &needs_yield);
+            bool success = xTaskNotifyAndQueryFromISR(handle(), value, static_cast<eNotifyAction>(action), &last_value_, &needs_yield);
             portYIELD_FROM_ISR(needs_yield);
             return success;
         }
