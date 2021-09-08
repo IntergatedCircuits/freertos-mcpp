@@ -98,6 +98,7 @@ namespace freertos
         ~thread();
 
         #ifdef configTHREAD_EXIT_CONDITION_INDEX
+
         private:
             condition_flags *get_exit_condition() const;
             void set_exit_condition(condition_flags *cond);
@@ -216,12 +217,26 @@ namespace freertos
 
             using notify_value = std::uint32_t;
 
+            /// @brief A lightweight synchronization and inter-process communication mechanism
+            /// for a single thread.
             class notifier
             {
             public:
-                constexpr notifier(thread &t) : thread_(&t)
+                constexpr notifier(thread &t)
+                    : thread_(&t)
                 {
                 }
+
+                using index_type = native::UBaseType_t;
+
+                #if (configTASK_NOTIFICATION_ARRAY_ENTRIES > 1)
+
+                    constexpr notifier(thread &t, index_type index)
+                        : thread_(&t), index_(index)
+                    {
+                    }
+
+                #endif // (configTASK_NOTIFICATION_ARRAY_ENTRIES > 1)
 
                 inline notify_value get_last_value() const
                 {
@@ -254,8 +269,14 @@ namespace freertos
                 }
 
             private:
-                thread *thread_;
+                thread *const thread_;
                 notify_value last_value_ = 0;
+
+                #if (configTASK_NOTIFICATION_ARRAY_ENTRIES > 1)
+
+                    const index_type index_ = 0;
+
+                #endif // (configTASK_NOTIFICATION_ARRAY_ENTRIES > 1)
 
                 inline native::tskTaskControlBlock* handle() const
                 {
@@ -451,10 +472,21 @@ namespace freertos
 
         #if (configUSE_TASK_NOTIFICATIONS == 1)
 
+            /// @brief  Wait for a notifier to signal the current thread.
+            /// @param  rel_time: maximum duration to wait for the notification
+            /// @param  value: it is set to the value of the notification as it is received
+            /// @param  clear_flags_before: these flags are cleared from the notification value
+            ///         before the waiting begins
+            /// @param  clear_flags_after: these flags are cleared from the notification value
+            ///         after the signal was received (only if it was received)
+            /// @return true if a notification was received, false if timed out
             bool wait_notification_for(const tick_timer::duration& rel_time, thread::notify_value *value,
                     thread::notify_value clear_flags_before = 0,
                     thread::notify_value clear_flags_after = 0);
 
+            /// @brief  Wait for a notifier to signal the current thread.
+            /// @param  rel_time: maximum duration to wait for the notification
+            /// @return true if a notification was received, false if timed out
             inline bool wait_signal_for(const tick_timer::duration& rel_time)
             {
                 return wait_notification_for(rel_time, nullptr);
@@ -462,6 +494,39 @@ namespace freertos
 
             notify_value try_acquire_notification_for(const tick_timer::duration& rel_time,
                     bool acquire_single = false);
+
+            #if (configTASK_NOTIFICATION_ARRAY_ENTRIES > 1)
+
+                /// @brief  Wait for a notifier to signal the current thread.
+                /// @param  index: notification selector index
+                /// @param  rel_time: maximum duration to wait for the notification
+                /// @param  value: it is set to the value of the notification as it is received
+                /// @param  clear_flags_before: these flags are cleared from the notification value
+                ///         before the waiting begins
+                /// @param  clear_flags_after: these flags are cleared from the notification value
+                ///         after the signal was received (only if it was received)
+                /// @return true if a notification was received, false if timed out
+                bool wait_notification_for(thread::notifier::index_type index,
+                        const tick_timer::duration& rel_time,
+                        thread::notify_value *value,
+                        thread::notify_value clear_flags_before = 0,
+                        thread::notify_value clear_flags_after = 0);
+
+                /// @brief  Wait for a notifier to signal the current thread.
+                /// @param  index: notification selector index
+                /// @param  rel_time: maximum duration to wait for the notification
+                /// @return true if a notification was received, false if timed out
+                inline bool wait_signal_for(thread::notifier::index_type index,
+                        const tick_timer::duration& rel_time)
+                {
+                    return wait_notification_for(index, rel_time, nullptr);
+                }
+
+                notify_value try_acquire_notification_for(thread::notifier::index_type index,
+                        const tick_timer::duration& rel_time,
+                        bool acquire_single = false);
+
+            #endif // (configTASK_NOTIFICATION_ARRAY_ENTRIES > 1)
 
         #endif // (configUSE_TASK_NOTIFICATIONS == 1)
     }

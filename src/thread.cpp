@@ -234,12 +234,24 @@ thread::thread(StackType_t *pstack ,std::uint32_t stack_size,
     {
         if (!this_cpu::is_in_isr())
         {
-            return xTaskNotifyAndQuery(handle(), value, static_cast<eNotifyAction>(action), &last_value_);
+            return
+            #if (configTASK_NOTIFICATION_ARRAY_ENTRIES > 1)
+                xTaskNotifyAndQueryIndexed(handle(), index_
+            #else
+                xTaskNotifyAndQuery(handle()
+            #endif // (configTASK_NOTIFICATION_ARRAY_ENTRIES > 1)
+                    , value, static_cast<eNotifyAction>(action), &last_value_);
         }
         else
         {
             BaseType_t needs_yield = false;
-            bool success = xTaskNotifyAndQueryFromISR(handle(), value, static_cast<eNotifyAction>(action), &last_value_, &needs_yield);
+            bool success =
+            #if (configTASK_NOTIFICATION_ARRAY_ENTRIES > 1)
+                xTaskNotifyAndQueryIndexedFromISR(handle(), index_
+            #else
+                xTaskNotifyAndQueryFromISR(handle()
+            #endif // (configTASK_NOTIFICATION_ARRAY_ENTRIES > 1)
+                    , value, static_cast<eNotifyAction>(action), &last_value_, &needs_yield);
             portYIELD_FROM_ISR(needs_yield);
             return success;
         }
@@ -253,7 +265,13 @@ thread::thread(StackType_t *pstack ,std::uint32_t stack_size,
     bool thread::notifier::cancel_signal()
     {
         configASSERT(!this_cpu::is_in_isr());
-        return xTaskNotifyStateClear(handle());
+        return
+        #if (configTASK_NOTIFICATION_ARRAY_ENTRIES > 1)
+            xTaskNotifyStateClearIndexed(handle(), index_
+        #else
+            xTaskNotifyStateClear(handle()
+        #endif // (configTASK_NOTIFICATION_ARRAY_ENTRIES > 1)
+            );
     }
 
     void thread::notifier::increment()
@@ -269,7 +287,13 @@ thread::thread(StackType_t *pstack ,std::uint32_t stack_size,
     notify_value thread::notifier::clear(notify_value flags)
     {
         configASSERT(!this_cpu::is_in_isr());
-        return ulTaskNotifyValueClear(handle(), flags);
+        return
+        #if (configTASK_NOTIFICATION_ARRAY_ENTRIES > 1)
+            ulTaskNotifyValueClearIndexed(handle(), index_
+        #else
+            ulTaskNotifyValueClear(handle()
+        #endif // (configTASK_NOTIFICATION_ARRAY_ENTRIES > 1)
+                , flags);
     }
 
     bool thread::notifier::try_set_value(notify_value new_value)
@@ -296,6 +320,29 @@ thread::thread(StackType_t *pstack ,std::uint32_t stack_size,
         configASSERT(!this_cpu::is_in_isr());
         return ulTaskNotifyTake(!acquire_single, to_ticks(rel_time));
     }
+
+    #if (configTASK_NOTIFICATION_ARRAY_ENTRIES > 1)
+
+        bool this_thread::wait_notification_for(thread::notifier::index_type index,
+                const tick_timer::duration& rel_time,
+                thread::notify_value *value,
+                thread::notify_value clear_flags_before, thread::notify_value clear_flags_after)
+        {
+            configASSERT(!this_cpu::is_in_isr());
+            return xTaskNotifyWaitIndexed(index,
+                    clear_flags_before, clear_flags_after, value, to_ticks(rel_time));
+        }
+
+        thread::notify_value this_thread::try_acquire_notification_for(thread::notifier::index_type index,
+                const tick_timer::duration& rel_time,
+                bool acquire_single)
+        {
+            configASSERT(!this_cpu::is_in_isr());
+            return ulTaskNotifyTakeIndexed(index, !acquire_single, to_ticks(rel_time));
+        }
+
+    #endif // (configTASK_NOTIFICATION_ARRAY_ENTRIES > 1)
+
 
 #endif // (configUSE_TASK_NOTIFICATIONS == 1)
 
