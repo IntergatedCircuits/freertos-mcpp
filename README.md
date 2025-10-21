@@ -16,6 +16,7 @@ while simplifying its use by a new API that closely follows the C++ standard cla
 
 * C++11 and above
 * Tested with [FreeRTOS][FreeRTOS-Kernel] 10, its public API is stable enough to enable the use on a wide range of versions
+* ESP-IDF platform supported
 * Only works with FreeRTOS ports that have `xPortIsInsideInterrupt()` call implemented
 
 ## Porting

@@ -1,42 +1,15 @@
-/**
- * @file      semaphore.cpp
- * @brief     FreeRTOS semaphore API abstraction
- * @author    Benedek Kupper
- *
- * Copyright (c) 2021 Benedek Kupper
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-#include "freertos/semaphore.h"
-#include "freertos/cpu.h"
+// SPDX-License-Identifier: MIT
 #include <cstring>
+#include "freertos/cpu.hpp"
+#include "freertos/semaphore.hpp"
+#if ESP_PLATFORM
+#include <freertos/semphr.h>
+#else
+#include <semphr.h>
+#endif
 
 namespace freertos
 {
-    namespace native
-    {
-        #include "semphr.h"
-    }
-}
-using namespace freertos;
-using namespace freertos::native;
-
 #if 0 // doesn't seem like a good idea
 semaphore::semaphore(semaphore&& other)
 {
@@ -100,7 +73,7 @@ bool semaphore::give(count_type update)
     }
 }
 
-thread *semaphore::get_mutex_holder() const
+thread* semaphore::get_mutex_holder() const
 {
     if (!this_cpu::is_in_isr())
     {
@@ -114,13 +87,13 @@ thread *semaphore::get_mutex_holder() const
 
 #if (configUSE_COUNTING_SEMAPHORES == 1)
 
-    semaphore::semaphore(count_type max, count_type desired)
-    {
-        // construction not allowed in ISR
-        configASSERT(!this_cpu::is_in_isr());
+semaphore::semaphore(count_type max, count_type desired)
+{
+    // construction not allowed in ISR
+    configASSERT(!this_cpu::is_in_isr());
 
-        (void)xSemaphoreCreateCountingStatic(max, desired, this);
-    }
+    (void)xSemaphoreCreateCountingStatic(max, desired, this);
+}
 
 #endif // (configUSE_COUNTING_SEMAPHORES == 1)
 
@@ -132,3 +105,5 @@ binary_semaphore::binary_semaphore(count_type desired)
     (void)xSemaphoreCreateBinaryStatic(this);
     give(desired);
 }
+
+} // namespace freertos

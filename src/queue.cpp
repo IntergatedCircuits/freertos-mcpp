@@ -1,41 +1,14 @@
-/**
- * @file      queue.cpp
- * @brief     FreeRTOS queue API abstraction
- * @author    Benedek Kupper
- *
- * Copyright (c) 2021 Benedek Kupper
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-#include "freertos/queue.h"
-#include "freertos/cpu.h"
+// SPDX-License-Identifier: MIT
+#include "freertos/queue.hpp"
+#include "freertos/cpu.hpp"
+#if ESP_PLATFORM
+#include <freertos/queue.h>
+#else
+#include <queue.h>
+#endif
 
 namespace freertos
 {
-    namespace native
-    {
-        #include "queue.h"
-    }
-}
-using namespace freertos;
-using namespace freertos::native;
-
 queue::size_type queue::size() const
 {
     if (!this_cpu::is_in_isr())
@@ -108,7 +81,7 @@ queue::~queue()
     vQueueDelete(handle());
 }
 
-bool queue::push_front(void *data, tick_timer::duration waittime)
+bool queue::push_front(void* data, tick_timer::duration waittime)
 {
     if (!this_cpu::is_in_isr())
     {
@@ -126,7 +99,7 @@ bool queue::push_front(void *data, tick_timer::duration waittime)
     }
 }
 
-bool queue::push_back(void *data, tick_timer::duration waittime)
+bool queue::push_back(void* data, tick_timer::duration waittime)
 {
     if (!this_cpu::is_in_isr())
     {
@@ -144,7 +117,7 @@ bool queue::push_back(void *data, tick_timer::duration waittime)
     }
 }
 
-void queue::replace(void *data)
+void queue::replace(void* data)
 {
     if (!this_cpu::is_in_isr())
     {
@@ -160,7 +133,7 @@ void queue::replace(void *data)
     }
 }
 
-bool queue::peek_front(void *data, tick_timer::duration waittime) const
+bool queue::peek_front(void* data, tick_timer::duration waittime) const
 {
     if (!this_cpu::is_in_isr())
     {
@@ -172,7 +145,7 @@ bool queue::peek_front(void *data, tick_timer::duration waittime) const
     }
 }
 
-bool queue::pop_front(void *data, tick_timer::duration waittime)
+bool queue::pop_front(void* data, tick_timer::duration waittime)
 {
     if (!this_cpu::is_in_isr())
     {
@@ -190,7 +163,7 @@ bool queue::pop_front(void *data, tick_timer::duration waittime)
     }
 }
 
-queue::queue(size_type size, size_type elem_size, unsigned char *elem_buffer)
+queue::queue(size_type size, size_type elem_size, unsigned char* elem_buffer)
 {
     // construction not allowed in ISR
     configASSERT(!this_cpu::is_in_isr());
@@ -209,3 +182,4 @@ queue::queue(size_type size, size_type elem_size, unsigned char *elem_buffer)
     }
 
 #endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)
+} // namespace freertos
