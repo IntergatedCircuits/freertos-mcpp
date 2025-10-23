@@ -2,6 +2,7 @@
 #ifndef __FREERTOS_THREAD_HPP_
 #define __FREERTOS_THREAD_HPP_
 
+#include "freertos/stdlib.hpp"
 #include "freertos/tick_timer.hpp"
 
 // opaque thread definition
@@ -266,13 +267,12 @@ thread* make_thread(thread::function func, void* param,
                     const char* name = thread::DEFAULT_NAME);
 
 template <typename T>
-static typename std::enable_if<(sizeof(T) <= sizeof(std::uintptr_t)), thread*>::type
+static typename std::enable_if<(sizeof(T) == sizeof(std::uintptr_t)), thread*>::type
 make_thread(void (*func)(T), T arg, size_t stacksize = thread::DEFAULT_STACK_SIZE,
             thread::priority prio = thread::priority(), const char* name = thread::DEFAULT_NAME)
 {
-    return make_thread(reinterpret_cast<thread::function>(func),
-                       reinterpret_cast<void*>(static_cast<std::uintptr_t>(arg)), stacksize, prio,
-                       name);
+    return make_thread(reinterpret_cast<thread::function>(func), bit_cast<void*>(arg), stacksize,
+                       prio, name);
 }
 
 template <typename T>
@@ -280,8 +280,8 @@ thread* make_thread(void (*func)(T*), T* arg, size_t stacksize = thread::DEFAULT
                     thread::priority prio = thread::priority(),
                     const char* name = thread::DEFAULT_NAME)
 {
-    return make_thread(reinterpret_cast<thread::function>(func), reinterpret_cast<void*>(arg),
-                       stacksize, prio, name);
+    return make_thread(reinterpret_cast<thread::function>(func), static_cast<void*>(arg), stacksize,
+                       prio, name);
 }
 
 template <typename T>
@@ -289,7 +289,7 @@ thread* make_thread(void (*func)(T*), T& arg, size_t stacksize = thread::DEFAULT
                     thread::priority prio = thread::priority(),
                     const char* name = thread::DEFAULT_NAME)
 {
-    return make_thread(reinterpret_cast<thread::function>(func), reinterpret_cast<void*>(&arg),
+    return make_thread(reinterpret_cast<thread::function>(func), static_cast<void*>(&arg),
                        stacksize, prio, name);
 }
 
@@ -298,8 +298,8 @@ thread* make_thread(T& obj, void (T::*member_func)(), size_t stacksize = thread:
                     thread::priority prio = thread::priority(),
                     const char* name = thread::DEFAULT_NAME)
 {
-    return make_thread(reinterpret_cast<thread::function>(member_func),
-                       reinterpret_cast<void*>(&obj), stacksize, prio, name);
+    return make_thread(reinterpret_cast<thread::function>(member_func), static_cast<void*>(&obj),
+                       stacksize, prio, name);
 }
 
 #endif // (configSUPPORT_DYNAMIC_ALLOCATION == 1)
@@ -325,29 +325,28 @@ class static_thread : public thread
 
     template <typename T>
     static_thread(
-        typename std::enable_if<(sizeof(T) <= sizeof(std::uintptr_t)), void (*)(T)>::type func,
+        typename std::enable_if<(sizeof(T) == sizeof(std::uintptr_t)), void (*)(T)>::type func,
         T arg, priority prio = priority(), const char* name = DEFAULT_NAME)
-        : static_thread(reinterpret_cast<function>(func),
-                        reinterpret_cast<void*>(static_cast<std::uintptr_t>(arg)), prio, name)
+        : static_thread(reinterpret_cast<function>(func), bit_cast<void*>(arg), prio, name)
     {}
 
     template <typename T>
     static_thread(void (*func)(T*), T* arg, priority prio = priority(),
                   const char* name = DEFAULT_NAME)
-        : static_thread(reinterpret_cast<function>(func), reinterpret_cast<void*>(arg), prio, name)
+        : static_thread(reinterpret_cast<function>(func), static_cast<void*>(arg), prio, name)
     {}
 
     template <typename T>
     static_thread(void (*func)(T*), T& arg, priority prio = priority(),
                   const char* name = DEFAULT_NAME)
-        : static_thread(reinterpret_cast<function>(func), reinterpret_cast<void*>(arg), prio, name)
+        : static_thread(reinterpret_cast<function>(func), static_cast<void*>(arg), prio, name)
     {}
 
     template <class T>
     static_thread(T& obj, void (T::*member_func)(), priority prio = priority(),
                   const char* name = DEFAULT_NAME)
-        : static_thread(reinterpret_cast<function>(member_func), reinterpret_cast<void*>(&obj),
-                        prio, name)
+        : static_thread(reinterpret_cast<function>(member_func), static_cast<void*>(&obj), prio,
+                        name)
     {}
 
   private:
