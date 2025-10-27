@@ -178,7 +178,7 @@ class thread : private ::StaticTask_t
     class notifier
     {
       public:
-        constexpr notifier(thread& t) : thread_(&t) {}
+        constexpr notifier(thread& t = *thread::get_current()) : thread_(&t) {}
 
         using index_type = ::UBaseType_t;
 
@@ -205,6 +205,8 @@ class thread : private ::StaticTask_t
         void set_value(notify_value new_value);
 
         inline void reset_value() { last_value_ = clear(~0); }
+
+        thread* get_thread() const { return thread_; }
 
       private:
         thread* const thread_;
@@ -398,6 +400,13 @@ bool wait_notification_for(const tick_timer::duration& rel_time, thread::notify_
                            thread::notify_value clear_flags_before = 0,
                            thread::notify_value clear_flags_after = 0);
 
+inline void wait_notification(thread::notify_value* value,
+                              thread::notify_value clear_flags_before = 0,
+                              thread::notify_value clear_flags_after = 0)
+{
+    wait_notification_for(infinity, value, clear_flags_before, clear_flags_after);
+}
+
 /// @brief  Wait for a notifier to signal the current thread.
 /// @param  rel_time: maximum duration to wait for the notification
 /// @return true if a notification was received, false if timed out
@@ -406,8 +415,18 @@ inline bool wait_signal_for(const tick_timer::duration& rel_time)
     return wait_notification_for(rel_time, nullptr);
 }
 
+inline void wait_signal()
+{
+    wait_signal_for(infinity);
+}
+
 notify_value try_acquire_notification_for(const tick_timer::duration& rel_time,
                                           bool acquire_single = false);
+
+inline notify_value acquire_notification(bool acquire_single = false)
+{
+    return try_acquire_notification_for(infinity, acquire_single);
+}
 
 #if (configTASK_NOTIFICATION_ARRAY_ENTRIES > 1)
 
@@ -424,6 +443,14 @@ bool wait_notification_for(thread::notifier::index_type index, const tick_timer:
                            thread::notify_value* value, thread::notify_value clear_flags_before = 0,
                            thread::notify_value clear_flags_after = 0);
 
+inline void wait_notification(thread::notifier::index_type index,
+                              const tick_timer::duration& rel_time, thread::notify_value* value,
+                              thread::notify_value clear_flags_before = 0,
+                              thread::notify_value clear_flags_after = 0)
+{
+    wait_notification_for(index, infinity, value, clear_flags_before, clear_flags_after);
+}
+
 /// @brief  Wait for a notifier to signal the current thread.
 /// @param  index: notification selector index
 /// @param  rel_time: maximum duration to wait for the notification
@@ -434,9 +461,20 @@ inline bool wait_signal_for(thread::notifier::index_type index,
     return wait_notification_for(index, rel_time, nullptr);
 }
 
+inline void wait_signal(thread::notifier::index_type index)
+{
+    return wait_signal_for(index, infinity);
+}
+
 notify_value try_acquire_notification_for(thread::notifier::index_type index,
                                           const tick_timer::duration& rel_time,
                                           bool acquire_single = false);
+
+inline notify_value acquire_notification(thread::notifier::index_type index,
+                                         bool acquire_single = false)
+{
+    return try_acquire_notification_for(index, infinity, acquire_single);
+}
 
 #endif // (configTASK_NOTIFICATION_ARRAY_ENTRIES > 1)
 
