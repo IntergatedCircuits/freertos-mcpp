@@ -141,7 +141,7 @@ class thread : private ::StaticTask_t
         /// @brief  Default priority is 1, to preempt the built-in IDLE thread of the RTOS.
         constexpr priority() : value_(1) {}
         constexpr priority(value_type value) : value_(value) {}
-        operator value_type&() { return value_; }
+        constexpr operator value_type&() { return value_; }
         constexpr operator value_type() const { return value_; }
 
         static constexpr priority max() { return detail::TOP_PRIORITY; }
@@ -198,13 +198,27 @@ class thread : private ::StaticTask_t
         void increment();
 
         void set_flags(notify_value flags);
-        inline void clear_flags(notify_value flags) { last_value_ = clear(flags); }
+        template <typename T>
+        void set_flags(T flags)
+        {
+            const auto method = static_cast<void (notifier::*)(notify_value)>(&notifier::set_flags);
+            (this->*method)(static_cast<notify_value>(flags));
+        }
+
+        void clear_flags(notify_value flags) { last_value_ = clear(flags); }
+        template <typename T>
+        void clear_flags(T flags)
+        {
+            const auto method =
+                static_cast<void (notifier::*)(notify_value)>(&notifier::clear_flags);
+            (this->*method)(static_cast<notify_value>(flags));
+        }
 
         bool try_set_value(notify_value new_value);
 
         void set_value(notify_value new_value);
 
-        inline void reset_value() { last_value_ = clear(~0); }
+        void reset_value() { last_value_ = clear(~0); }
 
         thread* get_thread() const { return thread_; }
 
@@ -400,6 +414,20 @@ bool wait_notification_for(const tick_timer::duration& rel_time, thread::notify_
                            thread::notify_value clear_flags_before = 0,
                            thread::notify_value clear_flags_after = 0);
 
+template <class Rep, class Period>
+inline auto wait_notification_for(const std::chrono::duration<Rep, Period>& rel_time,
+                                  thread::notify_value* value,
+                                  thread::notify_value clear_flags_before = 0,
+                                  thread::notify_value clear_flags_after = 0)
+{
+    // workaround to prevent this function calling itself
+    const auto ticks_wait_notification_for =
+        static_cast<bool (*)(const tick_timer::duration&, thread::notify_value*,
+                             thread::notify_value, thread::notify_value)>(&wait_notification_for);
+    return ticks_wait_notification_for(std::chrono::duration_cast<tick_timer::duration>(rel_time),
+                                       value, clear_flags_before, clear_flags_after);
+}
+
 inline void wait_notification(thread::notify_value* value,
                               thread::notify_value clear_flags_before = 0,
                               thread::notify_value clear_flags_after = 0)
@@ -415,6 +443,15 @@ inline bool wait_signal_for(const tick_timer::duration& rel_time)
     return wait_notification_for(rel_time, nullptr);
 }
 
+template <class Rep, class Period>
+inline auto wait_signal_for(const std::chrono::duration<Rep, Period>& rel_time)
+{
+    // workaround to prevent this function calling itself
+    const auto ticks_wait_signal_for =
+        static_cast<bool (*)(const tick_timer::duration&)>(&wait_signal_for);
+    return ticks_wait_signal_for(std::chrono::duration_cast<tick_timer::duration>(rel_time));
+}
+
 inline void wait_signal()
 {
     wait_signal_for(infinity);
@@ -422,6 +459,18 @@ inline void wait_signal()
 
 notify_value try_acquire_notification_for(const tick_timer::duration& rel_time,
                                           bool acquire_single = false);
+
+template <class Rep, class Period>
+inline auto try_acquire_notification_for(const std::chrono::duration<Rep, Period>& rel_time,
+                                         bool acquire_single = false)
+{
+    // workaround to prevent this function calling itself
+    const auto ticks_try_acquire_notification_for =
+        static_cast<notify_value (*)(const tick_timer::duration&, bool)>(
+            &try_acquire_notification_for);
+    return ticks_try_acquire_notification_for(
+        std::chrono::duration_cast<tick_timer::duration>(rel_time), acquire_single);
+}
 
 inline notify_value acquire_notification(bool acquire_single = false)
 {
@@ -443,6 +492,23 @@ bool wait_notification_for(thread::notifier::index_type index, const tick_timer:
                            thread::notify_value* value, thread::notify_value clear_flags_before = 0,
                            thread::notify_value clear_flags_after = 0);
 
+template <class Rep, class Period>
+inline auto wait_notification_for(thread::notifier::index_type index,
+                                  const std::chrono::duration<Rep, Period>& rel_time,
+                                  thread::notify_value* value,
+                                  thread::notify_value clear_flags_before = 0,
+                                  thread::notify_value clear_flags_after = 0)
+{
+    // workaround to prevent this function calling itself
+    const auto ticks_wait_notification_for =
+        static_cast<bool (*)(thread::notifier::index_type, const tick_timer::duration&,
+                             thread::notify_value*, thread::notify_value, thread::notify_value)>(
+            &wait_notification_for);
+    return ticks_wait_notification_for(index,
+                                       std::chrono::duration_cast<tick_timer::duration>(rel_time),
+                                       value, clear_flags_before, clear_flags_after);
+}
+
 inline void wait_notification(thread::notifier::index_type index,
                               const tick_timer::duration& rel_time, thread::notify_value* value,
                               thread::notify_value clear_flags_before = 0,
@@ -461,6 +527,17 @@ inline bool wait_signal_for(thread::notifier::index_type index,
     return wait_notification_for(index, rel_time, nullptr);
 }
 
+template <class Rep, class Period>
+inline auto wait_signal_for(thread::notifier::index_type index,
+                            const std::chrono::duration<Rep, Period>& rel_time)
+{
+    // workaround to prevent this function calling itself
+    const auto ticks_wait_signal_for =
+        static_cast<bool (*)(thread::notifier::index_type, const tick_timer::duration&)>(
+            &wait_signal_for);
+    return ticks_wait_signal_for(index, std::chrono::duration_cast<tick_timer::duration>(rel_time));
+}
+
 inline void wait_signal(thread::notifier::index_type index)
 {
     return wait_signal_for(index, infinity);
@@ -469,6 +546,19 @@ inline void wait_signal(thread::notifier::index_type index)
 notify_value try_acquire_notification_for(thread::notifier::index_type index,
                                           const tick_timer::duration& rel_time,
                                           bool acquire_single = false);
+
+template <class Rep, class Period>
+inline auto try_acquire_notification_for(thread::notifier::index_type index,
+                                         const std::chrono::duration<Rep, Period>& rel_time,
+                                         bool acquire_single = false)
+{
+    // workaround to prevent this function calling itself
+    const auto ticks_try_acquire_notification_for =
+        static_cast<notify_value (*)(thread::notifier::index_type, const tick_timer::duration&,
+                                     bool)>(&try_acquire_notification_for);
+    return ticks_try_acquire_notification_for(
+        index, std::chrono::duration_cast<tick_timer::duration>(rel_time), acquire_single);
+}
 
 inline notify_value acquire_notification(thread::notifier::index_type index,
                                          bool acquire_single = false)
