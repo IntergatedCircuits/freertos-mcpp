@@ -342,4 +342,10 @@ void this_thread::sleep_for(tick_timer::duration rel_time)
 
     vTaskDelay(to_ticks(rel_time));
 }
+
+void this_thread::terminate()
+{
+    thread::get_current()->~thread();
+}
+
 } // namespace freertos

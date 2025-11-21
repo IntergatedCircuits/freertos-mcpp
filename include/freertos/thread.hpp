@@ -400,6 +400,10 @@ inline void sleep_until(const std::chrono::time_point<Clock, Duration>& abs_time
     sleep_for(abs_time - Clock::now());
 }
 
+/// @brief  Terminates the current thread, freeing its resources.
+[[noreturn]]
+void terminate();
+
 #if (configUSE_TASK_NOTIFICATIONS == 1)
 
 /// @brief  Wait for a notifier to signal the current thread.
