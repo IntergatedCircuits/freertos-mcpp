@@ -17,10 +17,10 @@ static_assert(taskSCHEDULER_NOT_STARTED ==
 static_assert(taskSCHEDULER_RUNNING == static_cast<::BaseType_t>(scheduler::state::running),
               "These values must match!");
 
-void scheduler::start()
+[[noreturn]] void scheduler::start()
 {
-    // this call doesn't return
     vTaskStartScheduler();
+    __builtin_unreachable();
 }
 
 size_t scheduler::get_threads_count()
