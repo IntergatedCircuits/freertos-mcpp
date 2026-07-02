@@ -21,24 +21,28 @@ bool pend_call(pend_function_2 func, void* arg1, std::uint32_t arg2,
                tick_timer::duration waittime = tick_timer::duration(0));
 
 template <typename T1, typename T2>
-inline bool pend_call(void (*func)(T1, T2), T1 arg1, T2 arg2,
-                      tick_timer::duration waittime = tick_timer::duration(0))
+inline typename std::enable_if<sizeof(T1) == sizeof(void*) &&
+                                   sizeof(T2) == sizeof(std::uint32_t),
+                               bool>::type
+pend_call(void (*func)(T1, T2), T1 arg1, T2 arg2,
+          tick_timer::duration waittime = tick_timer::duration(0))
 {
     const auto pend_caller =
         static_cast<bool (*)(pend_function_2, void*, std::uint32_t, tick_timer::duration)>(
             &pend_call);
-    return pend_caller(reinterpret_cast<pend_function_2>(func), bit_cast<void*>(arg1),
+    return pend_caller(bit_cast<pend_function_2>(func), bit_cast<void*>(arg1),
                        bit_cast<std::uint32_t>(arg2), waittime);
 }
 
 template <typename T1, typename T2>
-inline bool pend_call(T1& obj, void (T1::*member_func)(T2), T2 arg2,
-                      tick_timer::duration waittime = tick_timer::duration(0))
+inline typename std::enable_if<sizeof(T2) == sizeof(std::uint32_t), bool>::type
+pend_call(T1& obj, void (T1::*member_func)(T2), T2 arg2,
+          tick_timer::duration waittime = tick_timer::duration(0))
 {
     const auto pend_caller =
         static_cast<bool (*)(pend_function_2, void*, std::uint32_t, tick_timer::duration)>(
             &pend_call);
-    return pend_caller(reinterpret_cast<pend_function_2>(member_func), static_cast<void*>(&obj),
+    return pend_caller(bit_cast<pend_function_2>(member_func), static_cast<void*>(&obj),
                        bit_cast<std::uint32_t>(arg2), waittime);
 }
 
@@ -53,12 +57,13 @@ bool pend_call(pend_function_1 func, std::uint32_t arg1,
                tick_timer::duration waittime = tick_timer::duration(0));
 
 template <typename T1>
-inline bool pend_call(void (*func)(T1), T1 arg1,
-                      tick_timer::duration waittime = tick_timer::duration(0))
+inline typename std::enable_if<sizeof(T1) == sizeof(std::uint32_t), bool>::type
+pend_call(void (*func)(T1), T1 arg1,
+          tick_timer::duration waittime = tick_timer::duration(0))
 {
     const auto pend_caller =
         static_cast<bool (*)(pend_function_1, std::uint32_t, tick_timer::duration)>(&pend_call);
-    return pend_caller(reinterpret_cast<pend_function_1>(func), bit_cast<std::uint32_t>(arg1),
+    return pend_caller(bit_cast<pend_function_1>(func), bit_cast<std::uint32_t>(arg1),
                        waittime);
 }
 
@@ -69,7 +74,7 @@ pend_call(T1& obj, void (T1::*member_func)(),
 {
     const auto pend_caller =
         static_cast<bool (*)(pend_function_1, std::uint32_t, tick_timer::duration)>(&pend_call);
-    return pend_caller(reinterpret_cast<pend_function_1>(member_func),
+    return pend_caller(bit_cast<pend_function_1>(member_func),
                        static_cast<std::uintptr_t>(&obj), waittime);
 }
 
