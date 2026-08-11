@@ -1,0 +1,11 @@
+menuconfig FREERTOS_MCPP_SHIM
+	bool "FreeRTOS C++ shim library"
+	depends on MCUX_COMPONENT_middleware.freertos-kernel
+    select configSUPPORT_STATIC_ALLOCATION if MCUX_PRJSEG_middleware.freertos-kernel.generated_config
+    imply configKERNEL_PROVIDED_STATIC_MEMORY
+	help
+	  Enable the FreeRTOS C++ shim library.
+
+if FREERTOS_MCPP_SHIM
+
+endif # FREERTOS_MCPP_SHIM

@@ -1,0 +1,6 @@
+# https://mcuxpresso.nxp.com/mcuxsdk/latest/html/develop/sdk/integration.html
+# the closest thing to a spec: mcuxsdk-core/scripts/mcux_module.py
+name: freertos-mcpp
+build:
+  cmake: .
+  kconfig: mcux/Kconfig

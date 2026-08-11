@@ -1,0 +1,2 @@
+# Kconfig for ESP-IDF
+# empty for now, simply exclude the component from the component paths if not needed
