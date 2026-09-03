@@ -1,0 +1,4 @@
+version: "0.1.0"
+description: "FreeRTOS C++ wrappers for ESP-IDF"
+url: "https://github.com/IntergatedCircuits/freertos-mcpp"
+license: "MIT"
